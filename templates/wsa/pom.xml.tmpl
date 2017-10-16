@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <groupId>orawsgen</groupId>
+    <artifactId>{{.WsdlAppName}}</artifactId>
+    <version>1.0.0</version>
+    <packaging>war</packaging>
+
+    <name>{{.WsdlAppName}}</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	    <maven.compiler.source>1.7</maven.compiler.source>
+	    <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-web-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+		<!-- jdbc -->
+		<dependency>
+			<groupId>com.oracle.jdbc</groupId>
+			<artifactId>ojdbc7</artifactId>
+			<version>12.1.0.2</version>
+			<scope>provided</scope>
+		</dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+	<repositories>
+		<!-- http://docs.oracle.com/middleware/1213/core/MAVEN/config_maven_repo.htm -->
+		<repository>
+			<id>maven.oracle.com</id>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<!--url>https://maven.oracle.com</url -->
+			<url>http://af.p43.eu/artifactory/maven.oracle.com/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
+	
+</project>

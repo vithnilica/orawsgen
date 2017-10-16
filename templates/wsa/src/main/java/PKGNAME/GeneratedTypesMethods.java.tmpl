@@ -1,0 +1,107 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
+import orawsgen.DBUtils;
+import orawsgen.DefaultTypesMethods;
+import {{$service.JavaPackage}}.GeneratedWSTypes.*;
+
+/*
+ * vygenerovane volani databazovych metod a tridy pro praci s databazovyma objektama a polema
+ */
+public class GeneratedTypesMethods{
+
+	//struct
+	{{range $structIdx, $struct := .StructDataTypes}}
+	public static void set{{$struct.JavaClassName}}Param(Connection con, CallableStatement cs, String parameterName, {{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}} data) throws SQLException {
+		if(data==null) {
+			cs.setNull(parameterName, java.sql.Types.STRUCT,"{{$struct.SqlTypeName}}");
+			return;
+		}
+		cs.setObject(parameterName, getDbObject{{$struct.JavaClassName}}(con, data));
+	}
+	public static void register{{$struct.JavaClassName}}OutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		cs.registerOutParameter(parameterName, java.sql.Types.STRUCT,"{{$struct.SqlTypeName}}");
+	}
+	public static {{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}} get{{$struct.JavaClassName}}OutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		return getWsObject{{$struct.JavaClassName}}(con, (java.sql.Struct) cs.getObject(parameterName));
+	}
+	public static Object getDbObject{{$struct.JavaClassName}}(java.sql.Connection con, {{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}} o) throws java.sql.SQLException {
+		if(o==null)return null;
+		Object[] arr=new Object[{{len $struct.Items}}];
+		{{range $itemIdx, $item := $struct.Items}}
+		arr[{{$itemIdx}}]={{(index $service.DataTypeMap $item.ItemDataTypeId).JdbcGetDbObject}}(con, o.{{$item.JavaItemName}});
+		{{end}}
+		return DBUtils.createStruct(con, "{{$struct.SqlTypeName}}", arr);
+	}
+	public static {{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}} getWsObject{{$struct.JavaClassName}}(java.sql.Connection con, Object d) throws java.sql.SQLException {
+		if(d==null)return null;
+		{{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}} o=new {{(index $service.DataTypeMap $struct.DataTypeId).JavaClass}}();
+		{{range $itemIdx, $item := $struct.Items}}
+		o.{{$item.JavaItemName}}={{(index $service.DataTypeMap $item.ItemDataTypeId).JdbcGetWsObject}}(con, ((java.sql.Struct)d).getAttributes()[{{$itemIdx}}]);
+		{{end}}
+		return o;
+	}
+	{{end}}
+
+
+	//list (pole ktere jsou parametrama metod)
+	{{range $listIdx, $list := .ListDataTypes}}
+	public static void set{{$list.JavaClassName}}Param(Connection con, CallableStatement cs, String parameterName, {{(index $service.DataTypeMap $list.DataTypeId).JavaClass}} list) throws SQLException {
+		if(list==null) {
+			cs.setNull(parameterName, java.sql.Types.ARRAY,"{{$list.SqlTypeName}}");
+			return;
+		}
+		Object[] arr=new Object[list.size()];
+		for(int i=0;i<arr.length;i++) {
+			arr[i]={{(index $service.DataTypeMap $list.ItemDataTypeId).JdbcGetDbObject}}(con, list.get(i));//prevod z xml objektu na jdbc
+		}
+		cs.setObject(parameterName, DBUtils.createArray(con, "{{$list.SqlTypeName}}", arr));
+	}
+	public static void register{{$list.JavaClassName}}OutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		cs.registerOutParameter(parameterName, java.sql.Types.ARRAY, "{{$list.SqlTypeName}}");
+	}
+	public static {{(index $service.DataTypeMap $list.DataTypeId).JavaClass}} get{{$list.JavaClassName}}OutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		java.sql.Array sqlArr=cs.getArray(parameterName);
+		if(sqlArr==null)return null;
+		Object[] arr = (Object[]) sqlArr.getArray();
+		{{(index $service.DataTypeMap $list.DataTypeId).JavaClass}} list=new java.util.ArrayList<>(arr.length);
+		for(int i=0;i<arr.length;i++) {
+			list.add({{(index $service.DataTypeMap $list.ItemDataTypeId).JdbcGetWsObject}}(con,arr[i]));//prevod z jdbc objektu na xml
+		}
+		return list;
+	}
+	{{end}}
+
+
+
+	//pole (pole jako objekty s jednou polozkou typu list)
+	{{range $arrayIdx, $array := .ArrayDataTypes}}
+	public static Object getDbObject{{$array.JavaClassName}}(java.sql.Connection con, {{(index $service.DataTypeMap $array.DataTypeId).JavaClass}} o) throws java.sql.SQLException {
+		if(o==null)return null;
+		if(o.array==null)return null;
+		Object[] arr=new Object[o.array.size()];
+		for(int i=0;i<arr.length;i++) {
+			arr[i]={{(index $service.DataTypeMap $array.ItemDataTypeId).JdbcGetDbObject}}(con,o.array.get(i));//prevod z xml objektu na jdbc
+		}
+		return DBUtils.createArray(con, "{{$array.SqlTypeName}}", arr);
+	}
+	public static {{(index $service.DataTypeMap $array.DataTypeId).JavaClass}} getWsObject{{$array.JavaClassName}}(java.sql.Connection con, Object d) throws java.sql.SQLException {
+		if(d==null)return null;
+		{{(index $service.DataTypeMap $array.DataTypeId).JavaClass}} o=new {{(index $service.DataTypeMap $array.DataTypeId).JavaClass}}();
+		Object[] arr = (Object[]) ((java.sql.Array)d).getArray();
+		o.array=new java.util.ArrayList<>(arr.length);
+		for(int i=0;i<arr.length;i++) {
+			o.array.add({{(index $service.DataTypeMap $array.ItemDataTypeId).JdbcGetWsObject}}(con, arr[i]));//prevod z jdbc objektu na xml
+		}
+		return o;
+	}
+	{{end}}
+
+
+}

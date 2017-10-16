@@ -1,0 +1,207 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.jws.WebResult;
+import javax.jws.WebService;
+import javax.jws.soap.SOAPBinding;
+//import javax.servlet.annotation.WebServlet;
+import javax.xml.bind.annotation.*;
+
+import orawsgen.*;
+
+//@WebServlet("/{{$service.WsdlAppName}}")
+@WebService(
+        serviceName = "{{$service.WsdlAppName}}_Service",
+        portName = "HttpSoap11",
+        targetNamespace = "{{$service.WsdlNameSpace}}",
+        name = "{{$service.WsdlAppName}}"
+)
+//@XmlSeeAlso({TestWSParams.ObjectFactory.class})
+@SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
+public class GeneratedWSSoap{
+	private static final Logger LOG = Logger.getLogger(Soap11WS.class.getName());
+
+	javax.sql.DataSource ds;
+
+	//@Resource(name="jdbc/OracleDS")
+	@Resource(mappedName="java:/OracleDS", type=DataSource.class , authenticationType=AuthenticationType.CONTAINER)
+	private void setDs (javax.sql.DataSource ds) {
+		this.ds = ds;
+	}
+
+
+	private java.sql.Connection getDbCon() throws java.sql.SQLException {
+		java.sql.Connection con=java.sql.DriverManager.getConnection("jdbc:oracle:thin:@192.168.0.20:1521:xe", "test", "password");
+		java.sql.Connection con=ds.getConnection();
+		con.setAutoCommit(false);
+		return con;
+	}
+
+
+{{range $methodIdx, $method := .Methods}}
+	@WebMethod(operationName="{{$method.WsdlMethodName}}", action = "{{$service.WsdlNameSpace}}/{{$method.WsdlMethodName}}")
+	@WebResult(name = "{{$method.WsdlMethodName}}ResponseElement", targetNamespace = "{{$service.WsdlNameSpace}}", partName = "parameters")
+	public {{$method.JavaWSClassName}}ResponseElement {{$method.JavaWSMethodName}}(
+			@WebParam(partName = "parameters", name = "{{$method.WsdlMethodName}}Element", targetNamespace = "{{$service.WsdlNameSpace}}")
+			{{$method.JavaWSClassName}}Element parameters
+	) {
+		LOG.info("start {{$method.WsdlMethodName}}");
+
+		{{$method.JavaWSClassName}}ResponseElement response = new {{$method.JavaWSClassName}}ResponseElement();
+		{{if $method.HasOutputParam}}
+			response.result=new {{$method.JavaWSClassName}}ResponseElementOut();
+		{{end}}
+
+		try (java.sql.Connection con = getDbCon(); java.sql.CallableStatement cs = con.prepareCall("{{$method.JdbcStmt}}");) {
+			{{if $method.IsFunction}}
+			//registrace vystupu funkce
+			{{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcRegOutParamMethod}}(con, cs, "ret");
+			{{end}}
+
+			{{range $paramIdx,$param:=.Params}}
+			{{if $param.IsOut}}
+			//registrace out parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcRegOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}
+
+            {{if $param.IsIn}}
+			//nastaveni in parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcSetParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}", parameters.{{$param.JavaParamName}});
+			{{end}}
+			{{end}}
+
+			cs.execute();
+			con.commit();
+
+
+			{{if $method.IsFunction}}
+			//precteni vystupu funkce
+			{{if $method.HasOutputParam}}
+			response.result.ret={{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcGetOutParamMethod}}(con, cs, "ret");
+			{{else}}
+			response.result={{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcGetOutParamMethod}}(con, cs, "ret");
+			{{end}}
+			{{end}}
+
+
+			{{if $method.HasOutputParam}}
+			//precteni vystupnich parametru
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
+			response.result.{{$param.JavaParamName}}={{(index $service.DataTypeMap $param.DataTypeId).JdbcGetOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}{{end}}
+			{{end}}
+
+		} catch (Exception e) {
+			LOG.log(Level.SEVERE,"err {{$method.WsdlMethodName}}", e);
+			throw new RuntimeException(e);
+		}
+
+		LOG.info("end {{$method.WsdlMethodName}}");
+		return response;
+	}
+
+	{{if $method.HasInputParam}}
+		//vstupni parametry
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "", propOrder = {
+			{{$service.SetTemplateVariable "paramFirst" true}}
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsIn}}{{if $service.GetTemplateVariable "paramFirst"}}{{$service.SetTemplateVariable "paramFirst" false}}{{else}}, {{end}}"{{$param.JavaParamName}}"{{end}}{{end}}
+		})
+		@XmlRootElement(name = "{{$method.WsdlMethodName}}Element")
+		public static class {{$method.JavaWSClassName}}Element {
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsIn}}
+				{{if $param.IsOut}}
+				//inout parametr
+				@XmlElement(name="{{$param.WsdlParamName}}_inout",required = true, nillable = true)
+				{{else}}
+				//in parametr
+				@XmlElement(name="{{$param.WsdlParamName}}",required = true, nillable = true)
+				{{end}}
+				{{if eq $param.DataTypeId "default:date"}}
+				@XmlSchemaType(name = "dateTime")
+				{{end}}
+				public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
+			{{end}}{{end}}
+		}
+	{{else}}
+		//bez vstupnich parametru
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "")
+		@XmlRootElement(name = "{{$method.WsdlMethodName}}Element")
+		public static class {{$method.JavaWSClassName}}Element {
+		}
+
+	{{end}}
+
+
+	{{if $method.HasOutputParam}}
+		//metoda s out parametrama
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "{{$service.WsdlAppName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
+			{{$service.SetTemplateVariable "paramFirst" true}}
+			{{if $method.IsFunction}}{{$service.SetTemplateVariable "paramFirst" false}}"ret"{{end}}
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}{{if $service.GetTemplateVariable "paramFirst"}}{{$service.SetTemplateVariable "paramFirst" false}}{{else}},{{end}}"{{$param.JavaParamName}}"{{end}}{{end}}
+		})
+		public static class {{$method.JavaWSClassName}}ResponseElementOut {
+			{{if $method.IsFunction}}
+			//navratova hodnota funkce
+			@XmlElement(name="return", required = true, nillable = true)
+			public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} ret;
+	        {{end}}
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
+			{{if $param.IsIn}}
+			//inout parametr
+			@XmlElement(name="{{$param.WsdlParamName}}Inout", required = true, nillable = true)
+			{{else}}
+			//out parametr
+			@XmlElement(name="{{$param.WsdlParamName}}Out", required = true, nillable = true)
+			{{end}}
+			{{if eq $param.DataTypeId "default:date"}}
+			@XmlSchemaType(name = "dateTime")
+			{{end}}
+			public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
+			{{end}}{{end}}
+		}
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "", propOrder = {
+			"result"
+		})
+		@XmlRootElement(name = "{{$method.WsdlMethodName}}ResponseElement")
+		public static class {{$method.JavaWSClassName}}ResponseElement {
+			@XmlElement(name="{{$method.WsdlPkgName}}User{{$method.JavaWSClassName}}Out", required = true, nillable = true)
+			public {{$method.JavaWSClassName}}ResponseElementOut result;
+		}
+	{{else if $method.IsFunction}}
+		//navratova hodnota funkce
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "", propOrder = {
+			"result"
+		})
+		@XmlRootElement(name = "{{$method.WsdlMethodName}}ResponseElement")
+		public static class {{$method.JavaWSClassName}}ResponseElement {
+			@XmlElement(name="result", required = true, nillable = true)
+			{{if eq $method.ResultDataTypeId "default:date"}}
+			@XmlSchemaType(name = "dateTime")
+			{{end}}
+			public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} result;
+		}
+	{{else}}
+		//metoda ktera nic nevraci
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(name = "")
+		@XmlRootElement(name = "{{$method.WsdlMethodName}}ResponseElement")
+		public static class {{$method.JavaWSClassName}}ResponseElement {
+		}
+	{{end}}
+{{end}}
+
+}

@@ -1,0 +1,51 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+import java.util.List;
+import javax.xml.bind.annotation.*;
+
+/*
+ * vygenerovane tridy pro databazove objekty
+ */
+public class GeneratedWSTypes {
+
+	//struct
+	{{range $structIdx, $struct := .StructDataTypes}}
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@XmlType(name = "{{$struct.WsdlTypeName}}User", propOrder = {
+		{{range $itemIdx, $item := $struct.Items}}{{if ne $itemIdx 0}},{{end}}"{{$item.JavaItemName}}"{{end}}
+	})
+	public static class {{$struct.JavaClassName}}{
+		{{range $itemIdx, $item := $struct.Items}}
+			@XmlElement(required = true, nillable = true, name="{{$item.WsdlItemName}}")
+			{{if eq $item.ItemDataTypeId "default:date"}}
+			@XmlSchemaType(name = "dateTime")
+			{{end}}
+			public {{(index $service.DataTypeMap $item.ItemDataTypeId).JavaClass}} {{$item.JavaItemName}};
+
+		{{end}}
+	}
+	{{end}}
+
+
+	//array
+	{{range $arrayIdx, $array := .ArrayDataTypes}}
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@XmlType(name = "{{$array.WsdlTypeName}}", propOrder = {
+	    "array"
+	})
+	public static class {{$array.JavaClassName}} {
+	    @XmlElement(nillable = true)
+	    public List<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}> array;
+
+	    public List<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}> getArray() {
+	        if (array == null) {
+	            array = new java.util.ArrayList<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}>();
+	        }
+	        return this.array;
+	    }
+	}
+	{{end}}
+
+}
