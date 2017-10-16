@@ -61,7 +61,7 @@ func main() {
 
 
 
-	err=orawsgen.TransformDir("templates/wsa/","out/pokus1", data)
+	err=orawsgen.TransformDir("templates/wsa/","out/"+appName, data)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 		panic(err)

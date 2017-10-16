@@ -7,11 +7,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Resource;
+import javax.annotation.Resource.AuthenticationType;
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebResult;
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
+import javax.sql.DataSource;
 //import javax.servlet.annotation.WebServlet;
 import javax.xml.bind.annotation.*;
 
@@ -27,7 +30,7 @@ import orawsgen.*;
 //@XmlSeeAlso({TestWSParams.ObjectFactory.class})
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 public class GeneratedWSSoap{
-	private static final Logger LOG = Logger.getLogger(Soap11WS.class.getName());
+	private static final Logger LOG = Logger.getLogger(GeneratedWSSoap.class.getName());
 
 	javax.sql.DataSource ds;
 
@@ -39,7 +42,7 @@ public class GeneratedWSSoap{
 
 
 	private java.sql.Connection getDbCon() throws java.sql.SQLException {
-		java.sql.Connection con=java.sql.DriverManager.getConnection("jdbc:oracle:thin:@192.168.0.20:1521:xe", "test", "password");
+		//java.sql.Connection con=java.sql.DriverManager.getConnection("jdbc:oracle:thin:@192.168.0.20:1521:xe", "test", "password");
 		java.sql.Connection con=ds.getConnection();
 		con.setAutoCommit(false);
 		return con;
