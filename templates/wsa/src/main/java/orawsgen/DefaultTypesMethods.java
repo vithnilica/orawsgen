@@ -135,6 +135,7 @@ public class DefaultTypesMethods {
 	public static String getClobOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
 		try {
 			Clob c=cs.getClob(parameterName);
+			if(c==null)return null;
 			Reader r=c.getCharacterStream();
 		    char[] arr = new char[8 * 1024];
 		    StringBuilder buffer = new StringBuilder();
@@ -190,6 +191,7 @@ public class DefaultTypesMethods {
 	public static byte[] getBlobOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
 		try {
 			Blob b=cs.getBlob(parameterName);
+			if(b==null)return null;
 			InputStream is = b.getBinaryStream();
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			int read;

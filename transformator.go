@@ -187,15 +187,29 @@ func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc)(error){
 	if err!=nil{
 		return errors.WithStack(err)
 	}
+	df,err:=dirFile.Stat()
+	if err!=nil{
+		return errors.WithStack(err)
+	}
+	//volani funkce pro adresar
+	err=walkFn(fs,dir,df)
+	if err!=nil{
+		return err
+	}
 	files,err:=dirFile.Readdir(-1)
 	if err!=nil{
 		return errors.WithStack(err)
 	}
 	for _,f:=range files{
 		path:=path.Join(dir,f.Name())
-		walkFn(fs,path,f)
 		if f.IsDir(){
 			err=walkVirtual(fs, path, walkFn)
+			if err!=nil{
+				return err
+			}
+		}else{
+			//volani funkce pro soubor
+			err=walkFn(fs,path,f)
 			if err!=nil{
 				return err
 			}

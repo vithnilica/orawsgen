@@ -35,7 +35,9 @@ public class GeneratedWSSoap{
 	javax.sql.DataSource ds;
 
 	//@Resource(name="jdbc/OracleDS")
-	@Resource(mappedName="java:/OracleDS", type=DataSource.class , authenticationType=AuthenticationType.CONTAINER)
+	//@Resource(mappedName="java:/OracleDS", type=DataSource.class , authenticationType=AuthenticationType.CONTAINER)
+	//@Resource(lookup = "java:/OracleDS")
+	@Resource(lookup = "{{$service.JavaDS}}")
 	private void setDs (javax.sql.DataSource ds) {
 		this.ds = ds;
 	}
@@ -180,7 +182,7 @@ public class GeneratedWSSoap{
 		})
 		@XmlRootElement(name = "{{$method.WsdlMethodName}}ResponseElement")
 		public static class {{$method.JavaWSClassName}}ResponseElement {
-			@XmlElement(name="{{$method.WsdlPkgName}}User{{$method.JavaWSClassName}}Out", required = true, nillable = true)
+			@XmlElement(name="result", required = true, nillable = true)
 			public {{$method.JavaWSClassName}}ResponseElementOut result;
 		}
 	{{else if $method.IsFunction}}

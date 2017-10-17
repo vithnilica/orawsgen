@@ -230,7 +230,7 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 	method.WsdlMethodName = deUnderscore(methodName, false)					//jmeno funkce: p1
 	method.JavaWSMethodName = deUnderscore(methodName, false)                         //jmeno funkce: p1 (male pismeno na zacatku, bez podtrzitek, pismeno za podtrzitkem velke)
 	method.JavaWSClassName = deUnderscore(methodName, true)                           //odvozeno od jmena funkce, jen s velkym pismenem: P1
-	method.WsdlPkgName=strings.ToLower(pkgName)
+	//method.WsdlPkgName=strings.ToLower(pkgName)
 
 	genneratedConfig.Methods = append(genneratedConfig.Methods, method)
 	return nil
@@ -486,7 +486,7 @@ func orclFinalizeGeneratedList(dataTypeMap *map[string]DataType, listDataTypes *
 
 
 
-func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, nameSpace string, javaPackage string)(*Service, error){
+func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer string, nameSpace string, javaPackage string, javaDS string)(*Service, error){
 	var tx *sql.Tx
 	tx, err := db.Begin()
 	defer tx.Rollback()
@@ -500,9 +500,12 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, nameSpa
 	}
 
 	var data = Service{
+		MavenAppName: appName,
+		MavenAppVer: appVer,
 		WsdlNameSpace: nameSpace,
 		WsdlAppName:   appName,
 		JavaPackage:   javaPackage,
+		JavaDS: javaDS,
 	}
 
 	if data.DataTypeMap==nil{
