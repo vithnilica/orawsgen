@@ -17,6 +17,12 @@ import (
 const TEMPLATE_FILE_EXT string =".tmpl"
 const TEMPLATE_PKGNAME string ="PKGNAME"
 
+
+var funcMap template.FuncMap = template.FuncMap{
+	"ToUpper": strings.ToUpper,
+	"ToLower": strings.ToLower,
+}
+
 //ohejbak pro sablonu. potrebuju promenne
 func (s *Service) SetTemplateVariable(key string, val interface{}) string {
 	s.TemplateVariableMap[key] = val
@@ -33,7 +39,7 @@ func TransformFile(tmplFilename string, destFilename string, data *Service)(erro
 	//vynuluje pomocne uloziste "promenych"
 	data.TemplateVariableMap = map[string]interface{}{}
 
-	t:= template.Must(template.ParseFiles(tmplFilename))
+	t:= template.Must(template.ParseFiles(tmplFilename)).Funcs(funcMap)
 
 	var b bytes.Buffer
 
@@ -58,13 +64,13 @@ func TransformReader(tmpl io.Reader, destFilename string, data *Service)(error) 
 	//vynuluje pomocne uloziste "promenych"
 	data.TemplateVariableMap = map[string]interface{}{}
 
-	//t:= template.Must(template.ParseFiles(tmplFilename))
+	//t:= template.Must(template.ParseFiles(tmplFilename)).Funcs(funcMap)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(tmpl)
 	tmplstr := buf.String()
 
-	t:=template.New("tmpl")
+	t:=template.New("tmpl").Funcs(funcMap)
 	t.Parse(tmplstr)
 
 	var b bytes.Buffer

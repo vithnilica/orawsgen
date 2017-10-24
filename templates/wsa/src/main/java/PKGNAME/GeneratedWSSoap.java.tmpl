@@ -164,10 +164,10 @@ public class GeneratedWSSoap{
 			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
 			{{if $param.IsIn}}
 			//inout parametr
-			@XmlElement(name="{{$param.WsdlParamName}}Inout", required = true, nillable = true)
+			@XmlElement(name="{{$param.WsdlParamName | ToLower}}Inout", required = true, nillable = true)
 			{{else}}
 			//out parametr
-			@XmlElement(name="{{$param.WsdlParamName}}Out", required = true, nillable = true)
+			@XmlElement(name="{{$param.WsdlParamName | ToLower}}Out", required = true, nillable = true)
 			{{end}}
 			{{if eq $param.DataTypeId "default:date"}}
 			@XmlSchemaType(name = "dateTime")
