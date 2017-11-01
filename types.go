@@ -30,7 +30,7 @@ type Method struct {
 	ResultDataTypeId string //typ navratove hodnoty u funkce (nil kdyz nejde o funkci)
 	//polozky ktere se "dopocitaji"
 	JdbcStmt         string //volani procedurt/funkce vcetne pojmenovanych parametru napr. "{call vh_test_pkg.p1(:p1,:p2,:p3)}"
-	//WsdlPkgName string
+	WsdlPkgName string
 	WsdlMethodName   string //jmeno funkce: p1 (prevedeno na male pismena, bez podrzitek)
 	JavaWSMethodName string //jmeno funkce: p1 (male pismeno na zacatku, bez podtrzitek, pismeno za podtrzitkem velke)
 	JavaWSClassName  string //odvozeno od jmena funkce, jen s velkym pismenem: P1

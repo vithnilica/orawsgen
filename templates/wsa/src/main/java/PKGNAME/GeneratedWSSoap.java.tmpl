@@ -150,7 +150,7 @@ public class GeneratedWSSoap{
 	{{if $method.HasOutputParam}}
 		//metoda s out parametrama
 		@XmlAccessorType(XmlAccessType.FIELD)
-		@XmlType(name = "{{$service.WsdlAppName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
+		@XmlType(name = "{{$method.WsdlPkgName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
 			{{$service.SetTemplateVariable "paramFirst" true}}
 			{{if $method.IsFunction}}{{$service.SetTemplateVariable "paramFirst" false}}"ret"{{end}}
 			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}{{if $service.GetTemplateVariable "paramFirst"}}{{$service.SetTemplateVariable "paramFirst" false}}{{else}},{{end}}"{{$param.JavaParamName}}"{{end}}{{end}}
