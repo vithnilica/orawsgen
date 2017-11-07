@@ -1,4 +1,4 @@
-package orawsgen
+package main
 
 import (
 	"bytes"
@@ -14,13 +14,13 @@ import (
 	"path"
 )
 
-const TEMPLATE_FILE_EXT string =".tmpl"
-const TEMPLATE_PKGNAME string ="PKGNAME"
-
+const TEMPLATE_FILE_EXT string = ".tmpl"
+const TEMPLATE_PKGNAME string = "PKGNAME"
 
 var funcMap template.FuncMap = template.FuncMap{
-	"ToUpper": strings.ToUpper,
-	"ToLower": strings.ToLower,
+	"ToUpper":   strings.ToUpper,
+	"ToLower":   strings.ToLower,
+	"HasPrefix": strings.HasPrefix,
 }
 
 //ohejbak pro sablonu. potrebuju promenne
@@ -32,14 +32,19 @@ func (s *Service) GetTemplateVariable(key string) interface{} {
 	return s.TemplateVariableMap[key]
 }
 
-
-func TransformFile(tmplFilename string, destFilename string, data *Service)(error) {
+func TransformFile(templName string, tmplFilename string, destFilename string, data *Service) (error) {
 	var err error
 	//ohejbak pro sablonu. potrebuju promenne
 	//vynuluje pomocne uloziste "promenych"
 	data.TemplateVariableMap = map[string]interface{}{}
 
-	t:= template.Must(template.ParseFiles(tmplFilename)).Funcs(funcMap)
+	//t:= template.Must(template.ParseFiles(tmplFilename)).Funcs(funcMap)
+
+	t := template.New(templName).Funcs(funcMap)
+	t, err = t.ParseFiles(tmplFilename)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	var b bytes.Buffer
 
@@ -48,8 +53,7 @@ func TransformFile(tmplFilename string, destFilename string, data *Service)(erro
 		return errors.WithStack(err)
 	}
 
-
-	err=ioutil.WriteFile(destFilename,b.Bytes(),0644)
+	err = ioutil.WriteFile(destFilename, b.Bytes(), 0644)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -57,8 +61,7 @@ func TransformFile(tmplFilename string, destFilename string, data *Service)(erro
 	return nil
 }
 
-
-func TransformReader(tmpl io.Reader, destFilename string, data *Service)(error) {
+func TransformReader(templName string, tmpl io.Reader, destFilename string, data *Service) (error) {
 	var err error
 	//ohejbak pro sablonu. potrebuju promenne
 	//vynuluje pomocne uloziste "promenych"
@@ -70,8 +73,11 @@ func TransformReader(tmpl io.Reader, destFilename string, data *Service)(error) 
 	buf.ReadFrom(tmpl)
 	tmplstr := buf.String()
 
-	t:=template.New("tmpl").Funcs(funcMap)
-	t.Parse(tmplstr)
+	t := template.New(templName).Funcs(funcMap)
+	t, err = t.Parse(tmplstr)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	var b bytes.Buffer
 
@@ -80,8 +86,7 @@ func TransformReader(tmpl io.Reader, destFilename string, data *Service)(error) 
 		return errors.WithStack(err)
 	}
 
-
-	err=ioutil.WriteFile(destFilename,b.Bytes(),0644)
+	err = ioutil.WriteFile(destFilename, b.Bytes(), 0644)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -115,7 +120,6 @@ func cpFile(src, dst string) (error) {
 	return nil
 }
 
-
 func cpReader(in io.Reader, dst string) (error) {
 	out, err := os.Create(dst)
 	if err != nil {
@@ -137,50 +141,49 @@ func cpReader(in io.Reader, dst string) (error) {
 	return nil
 }
 
-
-func TransformDir(skelDir string, destDir string, data *Service)(error) {
+func TransformDir(skelDir string, destDir string, data *Service) (error) {
 	//prevede jmeno java baliku na adresar (javax.xml.datatype -> javax/xml/datatype)
-	pkgDir:=filepath.Join(strings.Split(data.JavaPackage,".")...)
+	pkgDir := filepath.Join(strings.Split(data.JavaPackage, ".")...)
 
-	err:=filepath.Walk(skelDir, func (srcPath string, f os.FileInfo, err error) error {
-		if err!=nil{
+	err := filepath.Walk(skelDir, func(srcPath string, f os.FileInfo, err error) error {
+		if err != nil {
 			return errors.WithStack(err)
 		}
 
-		relPath,err:=filepath.Rel(skelDir, srcPath)
-		if err!=nil{
+		relPath, err := filepath.Rel(skelDir, srcPath)
+		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		//pro sablonu odmazu priponu
-		if filepath.Ext(srcPath)== TEMPLATE_FILE_EXT {
+		if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			relPath = relPath[:len(relPath)-len(TEMPLATE_FILE_EXT)]
 		}
-		relPath=strings.Replace(relPath, TEMPLATE_PKGNAME,pkgDir,-1)
-		destPath:=filepath.Join(destDir,relPath)
-		if f.IsDir(){
+		relPath = strings.Replace(relPath, TEMPLATE_PKGNAME, pkgDir, -1)
+		destPath := filepath.Join(destDir, relPath)
+		if f.IsDir() {
 			//adresar, pokud neexistuje, tak ho zalozi
-			log.Println("md",destPath)
+			log.Println("md", destPath)
 			os.MkdirAll(destPath, os.ModePerm);
-		}else if filepath.Ext(srcPath)== TEMPLATE_FILE_EXT {
+		} else if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			//sablona
-			log.Println("trans",destPath)
-			err=TransformFile(srcPath, destPath, data)
-			if err!=nil{
+			log.Println("trans", destPath)
+			err = TransformFile(filepath.Base(srcPath), srcPath, destPath, data)
+			if err != nil {
 				return err;
 			}
-		}else{
+		} else {
 			//soubor, jen se prekopiruje
-			log.Println("cp",destPath)
-			err=cpFile(srcPath, destPath)
-			if err!=nil{
+			log.Println("cp", destPath)
+			err = cpFile(srcPath, destPath)
+			if err != nil {
 				return err;
 			}
 
 		}
 		return nil
 	})
-	if err!=nil{
+	if err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
@@ -188,35 +191,35 @@ func TransformDir(skelDir string, destDir string, data *Service)(error) {
 
 type walkFunc func(fs http.FileSystem, path string, file os.FileInfo) error
 
-func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc)(error){
-	dirFile,err:=fs.Open(dir);
-	if err!=nil{
+func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc) (error) {
+	dirFile, err := fs.Open(dir);
+	if err != nil {
 		return errors.WithStack(err)
 	}
-	df,err:=dirFile.Stat()
-	if err!=nil{
+	df, err := dirFile.Stat()
+	if err != nil {
 		return errors.WithStack(err)
 	}
 	//volani funkce pro adresar
-	err=walkFn(fs,dir,df)
-	if err!=nil{
+	err = walkFn(fs, dir, df)
+	if err != nil {
 		return err
 	}
-	files,err:=dirFile.Readdir(-1)
-	if err!=nil{
+	files, err := dirFile.Readdir(-1)
+	if err != nil {
 		return errors.WithStack(err)
 	}
-	for _,f:=range files{
-		path:=path.Join(dir,f.Name())
-		if f.IsDir(){
-			err=walkVirtual(fs, path, walkFn)
-			if err!=nil{
+	for _, f := range files {
+		path := path.Join(dir, f.Name())
+		if f.IsDir() {
+			err = walkVirtual(fs, path, walkFn)
+			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			//volani funkce pro soubor
-			err=walkFn(fs,path,f)
-			if err!=nil{
+			err = walkFn(fs, path, f)
+			if err != nil {
 				return err
 			}
 		}
@@ -224,62 +227,61 @@ func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc)(error){
 	return nil
 }
 
-func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, data *Service)(error) {
+func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, data *Service) (error) {
 	//prevede jmeno java baliku na adresar (javax.xml.datatype -> javax/xml/datatype)
-	pkgDir:=filepath.Join(strings.Split(data.JavaPackage,".")...)
+	pkgDir := filepath.Join(strings.Split(data.JavaPackage, ".")...)
 
-	err:=walkVirtual(fs, skelDir, func (fs http.FileSystem, srcPath string, f os.FileInfo) error {
-		relPath,err:=filepath.Rel(skelDir, srcPath)
-		if err!=nil{
+	err := walkVirtual(fs, skelDir, func(fs http.FileSystem, srcPath string, f os.FileInfo) error {
+		relPath, err := filepath.Rel(skelDir, srcPath)
+		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		//pro sablonu odmazu priponu
-		if filepath.Ext(srcPath)== TEMPLATE_FILE_EXT {
+		if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			relPath = relPath[:len(relPath)-len(TEMPLATE_FILE_EXT)]
 		}
-		relPath=strings.Replace(relPath, TEMPLATE_PKGNAME,pkgDir,-1)
-		destPath:=filepath.Join(destDir,relPath)
-		if f.IsDir(){
+		relPath = strings.Replace(relPath, TEMPLATE_PKGNAME, pkgDir, -1)
+		destPath := filepath.Join(destDir, relPath)
+		if f.IsDir() {
 			//adresar, pokud neexistuje, tak ho zalozi
-			log.Println("md",destPath)
+			log.Println("md", destPath)
 			os.MkdirAll(destPath, os.ModePerm);
-		}else if filepath.Ext(srcPath)== TEMPLATE_FILE_EXT {
+		} else if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			//sablona
-			log.Println("trans",destPath)
-			file,err:=fs.Open(srcPath)
-			if err!=nil{
+			log.Println("trans", destPath)
+			file, err := fs.Open(srcPath)
+			if err != nil {
 				return errors.WithStack(err)
 			}
-			err=TransformReader(file, destPath, data)
-			if err!=nil{
+			err = TransformReader(filepath.Base(srcPath), file, destPath, data)
+			if err != nil {
 				return err;
 			}
-		}else{
+		} else {
 			//soubor, jen se prekopiruje
-			log.Println("cp",destPath)
-			file,err:=fs.Open(srcPath)
-			if err!=nil{
+			log.Println("cp", destPath)
+			file, err := fs.Open(srcPath)
+			if err != nil {
 				return errors.WithStack(err)
 			}
-			err=cpReader(file, destPath)
-			if err!=nil{
+			err = cpReader(file, destPath)
+			if err != nil {
 				return err;
 			}
 
 		}
 		return nil
 	})
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 
-
-/*
-	err:=filepath.Walk(skelDir,
-	if err!=nil{
-		return errors.WithStack(err)
-	}
-*/
+	/*
+		err:=filepath.Walk(skelDir,
+		if err!=nil{
+			return errors.WithStack(err)
+		}
+	*/
 	return nil
 }

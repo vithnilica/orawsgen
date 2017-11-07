@@ -1,14 +1,13 @@
-package orawsgen
-
-
+package main
 
 type Service struct {
-	MavenAppName string
-	MavenAppVer string
+	MavenAppName        string
+	MavenAppVer         string
 	WsdlNameSpace       string //url: http://oracle.generated/
-	WsdlAppName         string //vh_test_pkg
+	WsdlAppName         string //jmeno waru
+	WsdlPortTypeName    string //jmeno db baliku malima
 	JavaPackage         string //balicek testws4
-	JavaDS				string
+	JavaDS              string
 	Methods             []Method
 	DataTypeMap         map[string]DataType
 	StructDataTypes     []StructDataType
@@ -19,38 +18,37 @@ type Service struct {
 
 type Method struct {
 	//polozky nactene z databaza
-	DbName string
-	DbPkgOwner string
-	DbPkgName string
+	DbName         string
+	DbPkgOwner     string
+	DbPkgName      string
 	DbSubprogramId int64
-	IsFunction       bool   //metoda je funkce
-	HasInputParam    bool   //metoda ma parametry
-	HasOutputParam   bool   //metoda ma vystupni parametry
+	IsFunction     bool //metoda je funkce
+	HasInputParam  bool //metoda ma parametry
+	HasOutputParam bool //metoda ma vystupni parametry
 	//
 	ResultDataTypeId string //typ navratove hodnoty u funkce (nil kdyz nejde o funkci)
 	//polozky ktere se "dopocitaji"
 	JdbcStmt         string //volani procedurt/funkce vcetne pojmenovanych parametru napr. "{call vh_test_pkg.p1(:p1,:p2,:p3)}"
-	WsdlPkgName string
+	WsdlPkgName      string
 	WsdlMethodName   string //jmeno funkce: p1 (prevedeno na male pismena, bez podrzitek)
 	JavaWSMethodName string //jmeno funkce: p1 (male pismeno na zacatku, bez podtrzitek, pismeno za podtrzitkem velke)
 	JavaWSClassName  string //odvozeno od jmena funkce, jen s velkym pismenem: P1
 	//parametry
 	Params           []Param
+	JavaWSAOutParams []string
 }
-
 
 type UnsupportedMethod struct {
 	//polozky nactene z databaza
-	DbName string
-	DbPkgOwner string
-	DbPkgName string
+	DbName         string
+	DbPkgOwner     string
+	DbPkgName      string
 	DbSubprogramId int64
 	//
 	Reason string
 }
 
-
-type GenneratedConfig struct{
+type GenneratedConfig struct {
 	Methods            []Method
 	UnsupportedMethods []UnsupportedMethod
 	DataTypeMap        map[string]DataType
@@ -59,24 +57,19 @@ type GenneratedConfig struct{
 	ArrayDataTypes     []ArrayDataType
 }
 
-
 type Param struct {
 	//polozky nactene z databaza
 	DbParamName string
-	IsIn          bool
-	IsOut         bool
+	IsIn        bool
+	IsOut       bool
 	//
-	DataTypeId    string
+	DataTypeId string
 	//polozky ktere se "dopocitaji"
-	JavaParamName string //_return
-	JdbcStmtParam string
-	WsdlParamName string
+	JavaParamName    string
+	JdbcStmtParam    string
+	WsdlParamName    string
+	WsdlOutParamName string
 }
-
-
-
-
-
 
 type DataType struct {
 	DataTypeId            string
@@ -84,45 +77,41 @@ type DataType struct {
 	JdbcSetParamMethod    string //jmeno funkce pro predani parametru
 	JdbcRegOutParamMethod string //jmeno funkce pro registraci vystupniho parametru
 	JdbcGetOutParamMethod string
-	JdbcGetDbObject string
-	JdbcGetWsObject string
+	JdbcGetDbObject       string
+	JdbcGetWsObject       string
 }
 
-type StructItem struct{
-	WsdlItemName string
-	JavaItemName string
+type StructItem struct {
+	WsdlItemName   string
+	JavaItemName   string
 	ItemDataTypeId string
 }
 
-
 type StructDataType struct {
-	DataTypeId string
-	SqlTypeName string //VH_TEST_T1
-	WsdlTypeName   string //jmeno typu: VhTestT1 (prevedeno na male pismena, prvni pismeno velke)
-	JavaClassName  string //StructVhTestT1
-	Items []StructItem
+	DataTypeId    string
+	SqlTypeName   string //VH_TEST_T1
+	WsdlTypeName  string //jmeno typu: VhTestT1 (prevedeno na male pismena, prvni pismeno velke)
+	JavaClassName string //StructVhTestT1
+	Items         []StructItem
+	JavaWSAItems  []string
 }
 
 type ListDataType struct {
-	DataTypeId string
-	SqlTypeName string //VH_TEST_A1
+	DataTypeId     string
+	SqlTypeName    string //VH_TEST_A1
 	JavaClassName  string //ListVhTestA1 (veskutecnosti to bude pouzity jenom pro nazev metod)
 	ItemDataTypeId string
 }
 
 type ArrayDataType struct {
-	DataTypeId string
-	SqlTypeName string //VH_TEST_A1
+	DataTypeId     string
+	SqlTypeName    string //VH_TEST_A1
 	WsdlTypeName   string //jmeno typu: VhTestA1 (prevedeno na male pismena, prvni pismeno velke)
 	JavaClassName  string //ArrayVhTestA1
 	ItemDataTypeId string
 }
 
-
-
-
-
-func GetDefaultDataTypeMap()(map[string]DataType){
+func GetDefaultDataTypeMap() (map[string]DataType) {
 	var defaultDataTypeMap = map[string]DataType{
 		"default:number": {
 			"default:number",

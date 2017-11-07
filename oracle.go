@@ -1,4 +1,4 @@
-package orawsgen
+package main
 
 import (
 	"database/sql"
@@ -193,9 +193,18 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 				jdbcStmtParamStr = jdbcStmtParamStr + ", :p" + strconv.Itoa(paramNum)
 			}
 
-			param.JavaParamName = "p" + strconv.Itoa(paramNum)
+			//param.JavaParamName = "p" + strconv.Itoa(paramNum)
+			param.JavaParamName = deUnderscore(param.DbParamName, false)
 			param.JdbcStmtParam = "p" + strconv.Itoa(paramNum)
-			param.WsdlParamName = deUnderscore(param.DbParamName, false) //TODO je to dobre?
+			param.WsdlParamName = deUnderscore(param.DbParamName, false)
+
+			if param.IsOut {
+				if param.IsIn {
+					param.WsdlOutParamName = strings.ToLower(param.WsdlParamName) + "Inout"
+				} else {
+					param.WsdlOutParamName = strings.ToLower(param.WsdlParamName) + "Out"
+				}
+			}
 		}
 
 		var dataTypeId string
@@ -227,10 +236,26 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 	}
 
 	//method.WsdlMethodName = strings.Replace(strings.ToLower(methodName), "_", "", -1) //jmeno funkce: p1 (prevedeno na male pismena, bez podrzitek)
-	method.WsdlMethodName = deUnderscore(methodName, false)					//jmeno funkce: p1
-	method.JavaWSMethodName = deUnderscore(methodName, false)                         //jmeno funkce: p1 (male pismeno na zacatku, bez podtrzitek, pismeno za podtrzitkem velke)
-	method.JavaWSClassName = deUnderscore(methodName, true)                           //odvozeno od jmena funkce, jen s velkym pismenem: P1
-	method.WsdlPkgName=strings.ToLower(pkgName)
+	method.WsdlMethodName = deUnderscore(methodName, false)   //jmeno funkce: p1
+	method.JavaWSMethodName = deUnderscore(methodName, false) //jmeno funkce: p1 (male pismeno na zacatku, bez podtrzitek, pismeno za podtrzitkem velke)
+	method.JavaWSClassName = deUnderscore(methodName, true)   //odvozeno od jmena funkce, jen s velkym pismenem: P1
+	method.WsdlPkgName = strings.ToLower(pkgName)
+
+	//ohjebak pro outparametry "setrideny" nejdrive podle abecedy a pak pomoci hashmapy v jave
+	var parr15 [][2]string
+	if method.IsFunction {
+		parr15 = append(parr15, [2]string{"return", "ret"})
+	}
+	for i := range method.Params {
+		if method.Params[i].IsOut {
+			if method.Params[i].IsIn {
+				parr15 = append(parr15, [2]string{strings.ToLower(method.Params[i].WsdlParamName) + "Inout", method.Params[i].JavaParamName})
+			} else {
+				parr15 = append(parr15, [2]string{strings.ToLower(method.Params[i].WsdlParamName) + "Out", method.Params[i].JavaParamName})
+			}
+		}
+	}
+	method.JavaWSAOutParams = MixerJava15(parr15)
 
 	genneratedConfig.Methods = append(genneratedConfig.Methods, method)
 	return nil
@@ -268,14 +293,14 @@ func addPkgMethods(pkgOwner string, pkgName string, genneratedConfig *Gennerated
 		}
 
 		//hlida duplicitni jmeno (nepovedlo se zjistit podle jakeho pravidla wsa generuje jmeno)
-		dupl:=false
-		for i:=range genneratedConfig.Methods{
-			if(genneratedConfig.Methods[i].DbName==methodName){
-				dupl=true
+		dupl := false
+		for i := range genneratedConfig.Methods {
+			if (genneratedConfig.Methods[i].DbName == methodName) {
+				dupl = true
 				break
 			}
 		}
-		if dupl{
+		if dupl {
 			genneratedConfig.UnsupportedMethods = append(genneratedConfig.UnsupportedMethods, UnsupportedMethod{DbName: methodName, DbPkgOwner: pkgOwner, DbPkgName: pkgName, DbSubprogramId: subprogramId, Reason: "duplicitni jmeno metody"})
 			continue
 		}
@@ -441,14 +466,18 @@ func addStruct(typeOwner string, typeName string, genneratedConfig *GenneratedCo
 		return "", errors.New("typ nenalezen v pohledu all_type_attrs " + typeOwner + ", " + typeName)
 	}
 
+	//ohjebak pro polozky "setrideny" nejdrive podle abecedy a pak pomoci hashmapy v jave
+	var iarr15 [][2]string
+	for i := range structDataType.Items {
+		iarr15 = append(iarr15, [2]string{structDataType.Items[i].WsdlItemName, structDataType.Items[i].JavaItemName})
+	}
+	structDataType.JavaWSAItems = MixerJava15(iarr15)
+
 	genneratedConfig.StructDataTypes = append(genneratedConfig.StructDataTypes, structDataType)
 	genneratedConfig.DataTypeMap[structDataTypeId] = dataType
 
 	return structDataTypeId, nil
 }
-
-
-
 
 func orclGenerateConfig(searchPkgName string, tx *sql.Tx) (genneratedConfig *GenneratedConfig, err error) {
 	var pkgOwner string
@@ -476,22 +505,20 @@ func orclGenerateConfig(searchPkgName string, tx *sql.Tx) (genneratedConfig *Gen
 }
 
 //doplni javovy typ List<Typ> z toho co pri generovani nebylo znamo
-func orclFinalizeGeneratedList(dataTypeMap *map[string]DataType, listDataTypes *[]ListDataType){
-	for _,listDataType:=range *listDataTypes{
-		dt:=(*dataTypeMap)[listDataType.DataTypeId]
-		dt.JavaClass="List<"+(*dataTypeMap)[listDataType.ItemDataTypeId].JavaClass+">"
-		(*dataTypeMap)[listDataType.DataTypeId]=dt;
+func orclFinalizeGeneratedList(dataTypeMap *map[string]DataType, listDataTypes *[]ListDataType) {
+	for _, listDataType := range *listDataTypes {
+		dt := (*dataTypeMap)[listDataType.DataTypeId]
+		dt.JavaClass = "List<" + (*dataTypeMap)[listDataType.ItemDataTypeId].JavaClass + ">"
+		(*dataTypeMap)[listDataType.DataTypeId] = dt;
 	}
 }
 
-
-
-func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer string, nameSpace string, javaPackage string, javaDS string)(*Service, error){
+func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer string, nameSpace string, javaPackage string, javaDS string) (*Service, error) {
 	var tx *sql.Tx
 	tx, err := db.Begin()
 	defer tx.Rollback()
 	if err != nil {
-		return nil,errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
 
 	genneratedConfig, err := orclGenerateConfig(searchPkgName, tx)
@@ -500,16 +527,17 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 	}
 
 	var data = Service{
-		MavenAppName: appName,
-		MavenAppVer: appVer,
-		WsdlNameSpace: nameSpace,
-		WsdlAppName:   appName,
-		JavaPackage:   javaPackage,
-		JavaDS: javaDS,
+		MavenAppName:     appName,
+		MavenAppVer:      appVer,
+		WsdlNameSpace:    nameSpace,
+		WsdlAppName:      appName,
+		WsdlPortTypeName: strings.ToLower(searchPkgName),
+		JavaPackage:      javaPackage,
+		JavaDS:           javaDS,
 	}
 
-	if data.DataTypeMap==nil{
-		data.DataTypeMap=map[string]DataType{};
+	if data.DataTypeMap == nil {
+		data.DataTypeMap = map[string]DataType{};
 	}
 
 	//pripojeni vygenerovanych hodnot
@@ -529,14 +557,13 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 	//doplneni polozek ktere pri generovani nebyly dostupne
 	orclFinalizeGeneratedList(&data.DataTypeMap, &data.ListDataTypes)
 
-
 	//vypise netpodporovane metody
-	if len(genneratedConfig.UnsupportedMethods)>0{
+	if len(genneratedConfig.UnsupportedMethods) > 0 {
 		fmt.Println("metody ktere se nepouziji")
 		for _, unsupportedMethod := range genneratedConfig.UnsupportedMethods {
 			fmt.Println(unsupportedMethod.DbPkgName+"."+unsupportedMethod.DbName, "cislo metody:", unsupportedMethod.DbSubprogramId, "duvod:", unsupportedMethod.Reason)
 		}
 	}
 
-	return &data,nil
+	return &data, nil
 }

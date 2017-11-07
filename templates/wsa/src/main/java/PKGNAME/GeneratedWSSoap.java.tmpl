@@ -25,7 +25,8 @@ import orawsgen.*;
         serviceName = "{{$service.WsdlAppName}}_Service",
         portName = "HttpSoap11",
         targetNamespace = "{{$service.WsdlNameSpace}}",
-        name = "{{$service.WsdlAppName}}"
+        //name = "{{$service.WsdlAppName}}"
+        name = "{{$service.WsdlPortTypeName}}"
 )
 //@XmlSeeAlso({TestWSParams.ObjectFactory.class})
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
@@ -148,26 +149,26 @@ public class GeneratedWSSoap{
 
 
 	{{if $method.HasOutputParam}}
-		//metoda s out parametrama
+	//metoda s out parametrama
 		@XmlAccessorType(XmlAccessType.FIELD)
 		@XmlType(name = "{{$method.WsdlPkgName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
-			{{$service.SetTemplateVariable "paramFirst" true}}
-			{{if $method.IsFunction}}{{$service.SetTemplateVariable "paramFirst" false}}"ret"{{end}}
-			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}{{if $service.GetTemplateVariable "paramFirst"}}{{$service.SetTemplateVariable "paramFirst" false}}{{else}},{{end}}"{{$param.JavaParamName}}"{{end}}{{end}}
+			{{range $opi,$op:=$method.JavaWSAOutParams}}{{if ne 0 $opi}},{{end}}"{{$op}}"{{end}}
 		})
 		public static class {{$method.JavaWSClassName}}ResponseElementOut {
 			{{if $method.IsFunction}}
 			//navratova hodnota funkce
+			{{if HasPrefix $method.ResultDataTypeId "generated:list:"}}
+			@XmlElement(name="return", nillable = true)
+			{{else}}
 			@XmlElement(name="return", required = true, nillable = true)
+			{{end}}
 			public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} ret;
 	        {{end}}
 			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
-			{{if $param.IsIn}}
-			//inout parametr
-			@XmlElement(name="{{$param.WsdlParamName | ToLower}}Inout", required = true, nillable = true)
+			{{if HasPrefix $param.DataTypeId "generated:list:"}}
+			@XmlElement(name="{{$param.WsdlOutParamName}}", nillable = true)
 			{{else}}
-			//out parametr
-			@XmlElement(name="{{$param.WsdlParamName | ToLower}}Out", required = true, nillable = true)
+			@XmlElement(name="{{$param.WsdlOutParamName}}", required = true, nillable = true)
 			{{end}}
 			{{if eq $param.DataTypeId "default:date"}}
 			@XmlSchemaType(name = "dateTime")
@@ -185,6 +186,7 @@ public class GeneratedWSSoap{
 			@XmlElement(name="result", required = true, nillable = true)
 			public {{$method.JavaWSClassName}}ResponseElementOut result;
 		}
+
 	{{else if $method.IsFunction}}
 		//navratova hodnota funkce
 		@XmlAccessorType(XmlAccessType.FIELD)

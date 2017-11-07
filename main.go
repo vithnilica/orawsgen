@@ -1,9 +1,8 @@
 package main
 
-//go:generate go-bindata -prefix ../../ -pkg main -o ./bindata.go ../../templates/...
+//go:generate go-bindata -prefix ./ -pkg main -o ./bindata.go ./templates/...
 
 import (
-	"github.com/vithnilica/orawsgen"
 	"fmt"
 	"database/sql"
 	_ "github.com/mattn/go-oci8"
@@ -14,7 +13,6 @@ import (
 	"path/filepath"
 	"github.com/elazarl/go-bindata-assetfs"
 )
-
 
 var conStr *string = flag.String("c", "", "Přihlašovací údaje do databáze (např. user/password@db123)")
 var searchPkgName *string = flag.String("pkg", "", "Jméno balíku (např. cz_ws_moa2)")
@@ -37,7 +35,6 @@ func getwd() string {
 	return dir
 }
 
-
 func main() {
 	flag.Parse()
 	if conStr == nil || *conStr == "" {
@@ -57,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *logEnabled!=true{
+	if *logEnabled != true {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}
@@ -73,35 +70,34 @@ func main() {
 		panic(err)
 	}
 
-	data,err:=orawsgen.OrclServiceConfig(db, *searchPkgName, *appName, *appVer, *nameSpace, *javaPackage, *javaDS)
+	data, err := OrclServiceConfig(db, *searchPkgName, *appName, *appVer, *nameSpace, *javaPackage, *javaDS)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
 
-	destDir:=filepath.Join(*dir,*appName)
+	destDir := filepath.Join(*dir, *appName)
 
-	if *tmplDir!=""{
-		err=orawsgen.TransformDir(*tmplDir,destDir, data)
+	if *tmplDir != "" {
+		err = TransformDir(*tmplDir, destDir, data)
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)
 		}
-	}else{
-		fs:=assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}
-		err=orawsgen.TransformVirtualDir(&fs,filepath.Join("templates",*tmpl),destDir, data)
+	} else {
+		fs := assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}
+		err = TransformVirtualDir(&fs, filepath.Join("templates", *tmpl), destDir, data)
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)
 		}
-		if *tmplExport{
-			err=RestoreAssets(filepath.Join(destDir,"template"), filepath.Join("templates",*tmpl))
+		if *tmplExport {
+			err = RestoreAssets(filepath.Join(destDir, "template"), filepath.Join("templates", *tmpl))
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
-
 
 	fmt.Println("hotovo")
 }

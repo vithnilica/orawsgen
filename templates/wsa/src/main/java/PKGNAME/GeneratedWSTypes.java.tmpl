@@ -14,7 +14,7 @@ public class GeneratedWSTypes {
 	{{range $structIdx, $struct := .StructDataTypes}}
 	@XmlAccessorType(XmlAccessType.FIELD)
 	@XmlType(name = "{{$struct.WsdlTypeName}}User", propOrder = {
-		{{range $itemIdx, $item := $struct.Items}}{{if ne $itemIdx 0}},{{end}}"{{$item.JavaItemName}}"{{end}}
+		{{range $itemIdx, $wsi := $struct.JavaWSAItems}}{{if ne $itemIdx 0}},{{end}}"{{$wsi}}"{{end}}
 	})
 	public static class {{$struct.JavaClassName}}{
 		{{range $itemIdx, $item := $struct.Items}}
