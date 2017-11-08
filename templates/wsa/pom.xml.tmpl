@@ -69,7 +69,7 @@
 			            <id>package</id>
 			            <phase>package</phase>
 			            <configuration>
-			                <className>{{$service.JavaPackage}}.GeneratedWSSoap</className>
+			                <className>{{.JavaPackage}}.GeneratedWSSoap</className>
 			                <genWsdl>true</genWsdl>
 			                <verbose>true</verbose>
 			                <outputFile>${project.build.directory}/${project.name}-${project.version}.wsdl</outputFile>
