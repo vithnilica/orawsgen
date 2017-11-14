@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"reflect"
 )
 
 const TEMPLATE_FILE_EXT string = ".tmpl"
@@ -21,6 +22,12 @@ var funcMap template.FuncMap = template.FuncMap{
 	"ToUpper":   strings.ToUpper,
 	"ToLower":   strings.ToLower,
 	"HasPrefix": strings.HasPrefix,
+	"Last": func(x int, a interface{}) bool {
+		return x == reflect.ValueOf(a).Len() - 1
+	},
+	"NotLast": func(x int, a interface{}) bool {
+		return x != reflect.ValueOf(a).Len() - 1
+	},
 }
 
 //ohejbak pro sablonu. potrebuju promenne

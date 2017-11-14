@@ -7,11 +7,9 @@ import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.GregorianCalendar;
 
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 
@@ -21,7 +19,7 @@ import oracle.jdbc.OracleConnection;
 import oracle.sql.StructDescriptor;
 
 public class DBUtils {
-	
+
 	public static Struct createStruct(Connection con, String typeName, Object[] arr) throws SQLException {
 		//ohejbak ktery zajisti fungovani i po pridani nove polozky do typu
 		StructDescriptor sd=StructDescriptor.createDescriptor(typeName, con);
@@ -33,15 +31,15 @@ public class DBUtils {
 			//TODO jen zalogovat
 		}
 		arr=Arrays.copyOf(arr, newLength);
-		return con.createStruct(typeName, arr);		
+		return con.createStruct(typeName, arr);
 	}
-	
+
 	public static Array createArray(Connection con, String typeName, Object[] arr)throws SQLException {
 		Array sqlArr = ((OracleConnection)con).createOracleArray(typeName,arr);
 		return sqlArr;
 	}
 
-	
+	/*
 	public static XMLGregorianCalendar convertSqlTs2XmlCal(Timestamp ts)throws SQLException {
 		if(ts==null)return null;
 		GregorianCalendar cal1 = new GregorianCalendar();
@@ -52,11 +50,26 @@ public class DBUtils {
 			throw new SQLException(e);
 		}
 	}
-	
+
 	public static Timestamp convertXmlCal2SqlTs(XMLGregorianCalendar cal)throws SQLException {
 		if(cal==null)return null;
 		return new Timestamp(cal.toGregorianCalendar().getTimeInMillis());
 	}
+	*/
+
+	public static Date convertSqlTs2Date(Timestamp ts)throws SQLException {
+		if(ts==null)return null;
+		GregorianCalendar cal1 = new GregorianCalendar();
+		cal1.setTimeInMillis(ts.getTime());
+		return cal1.getTime();
+	}
+
+	public static Timestamp convertDate2SqlTs(Date d)throws SQLException {
+		if(d==null)return null;
+		return new Timestamp(d.getTime());
+
+	}
+
 	
 	public static SQLXML convertXmlAny2SqlXml(Connection con, XmlAny x)throws SQLException {
 		if(x==null)return null;

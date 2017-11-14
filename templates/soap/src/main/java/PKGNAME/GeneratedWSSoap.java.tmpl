@@ -1,0 +1,132 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Resource;
+import javax.annotation.Resource.AuthenticationType;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.jws.WebParam.Mode;
+import javax.jws.WebResult;
+import javax.jws.WebService;
+import javax.jws.soap.SOAPBinding;
+import javax.sql.DataSource;
+import javax.xml.bind.annotation.*;
+import javax.xml.ws.Holder;
+
+import orawsgen.*;
+
+@WebService(
+        serviceName = "{{$service.AppName}}",
+        targetNamespace = "{{$service.WsdlNameSpace}}"
+)
+//@SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
+public class GeneratedWSSoap{
+	private static final Logger LOG = Logger.getLogger(GeneratedWSSoap.class.getName());
+
+	javax.sql.DataSource ds;
+
+	@Resource(lookup = "{{$service.JavaDS}}")
+	private void setDs (javax.sql.DataSource ds) {
+		this.ds = ds;
+	}
+
+
+	private java.sql.Connection getDbCon() throws java.sql.SQLException {
+		java.sql.Connection con=ds.getConnection();
+		con.setAutoCommit(false);
+		return con;
+	}
+
+
+{{range $methodIdx, $method := .Methods}}
+	@WebMethod(operationName="{{$method.WsdlMethodName}}", action = "{{$service.WsdlNameSpace}}/{{$method.WsdlMethodName}}")
+	{{if $method.IsFunction}}
+	@WebResult(name = "{{$method.WsdlMethodName}}Response")
+    public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} {{$method.JavaWSMethodName}}(
+	{{else}}
+    public void {{$method.JavaWSMethodName}}(
+	{{end}}
+    {{range $paramIdx,$param:=$method.Params}}
+        {{if $param.IsOut}}
+        {{if $param.IsIn}}
+        //inout
+        @WebParam(name="{{$param.JavaParamName}}", mode=Mode.INOUT)
+        Holder<{{(index $service.DataTypeMap $param.DataTypeId).JavaClass}}> {{$param.JavaParamName}}{{if NotLast $paramIdx $method.Params}},{{end}}
+        {{else}}
+        //out
+        @WebParam(name="{{$param.JavaParamName}}", mode=Mode.OUT)
+        Holder<{{(index $service.DataTypeMap $param.DataTypeId).JavaClass}}> {{$param.JavaParamName}}{{if NotLast $paramIdx $method.Params}},{{end}}
+        {{end}}
+        {{else}}
+        //in
+        @WebParam(name="{{$param.JavaParamName}}", mode=Mode.IN)
+        {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}}{{if NotLast $paramIdx $method.Params}},{{end}}
+        {{end}}
+    {{end}}
+	) {
+		LOG.info("start {{$method.JavaWSMethodName}}");
+
+		{{if $method.IsFunction}}
+		{{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} _ret;
+		{{end}}
+
+		try (java.sql.Connection con = getDbCon(); java.sql.CallableStatement cs = con.prepareCall("{{$method.JdbcStmt}}");) {
+			{{if $method.IsFunction}}
+			//registrace vystupu funkce
+			{{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcRegOutParamMethod}}(con, cs, "ret");
+			{{end}}
+
+			{{range $paramIdx,$param:=.Params}}
+			{{if $param.IsOut}}
+			//registrace out parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcRegOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}
+
+            {{if $param.IsIn}}
+            {{if $param.IsOut}}
+            //nastaveni in out parametru
+            {{(index $service.DataTypeMap $param.DataTypeId).JdbcSetParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}", {{$param.JavaParamName}}.value);
+            {{else}}
+			//nastaveni in parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcSetParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}", {{$param.JavaParamName}});
+			{{end}}
+			{{end}}
+			{{end}}
+
+			cs.execute();
+			con.commit();
+
+
+			{{if $method.IsFunction}}
+			//precteni vystupu funkce
+			_ret={{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcGetOutParamMethod}}(con, cs, "ret");
+			{{end}}
+
+
+			{{if $method.HasOutputParam}}
+			//precteni vystupnich parametru
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
+			{{$param.JavaParamName}}.value={{(index $service.DataTypeMap $param.DataTypeId).JdbcGetOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}{{end}}
+			{{end}}
+
+		} catch (Exception e) {
+			LOG.log(Level.SEVERE,"err {{$method.JavaWSMethodName}}", e);
+			throw new RuntimeException(e);
+		}
+
+		LOG.info("end {{$method.JavaWSMethodName}}");
+		{{if $method.IsFunction}}
+		return _ret;
+		{{end}}
+	}
+
+{{end}}
+
+}

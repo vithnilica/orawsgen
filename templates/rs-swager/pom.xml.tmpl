@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	    <maven.compiler.source>1.8</maven.compiler.source>
 	    <maven.compiler.target>1.8</maven.compiler.target>
-	    <cxf.version>3.2.0</cxf.version>
+	    <swagger.version>1.5.16</swagger.version>
 	    <maven.war.version>3.2.0</maven.war.version>
     </properties>
     
@@ -32,6 +32,18 @@
 			<version>12.1.0.2</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>io.swagger</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>io.swagger</groupId>
+		    <artifactId>swagger-jaxrs</artifactId>
+		    <version>${swagger.version}</version>
+		</dependency>
     </dependencies>
 
     <build>
@@ -44,43 +56,6 @@
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
-            <!-- generovani wsdl -->
-            <!-- neni potreba, ale muze to byt uzitecne -->
-			<plugin>
-			    <groupId>org.apache.cxf</groupId>
-			    <artifactId>cxf-java2ws-plugin</artifactId>
-			    <version>${cxf.version}</version>
-			    <dependencies>
-			        <dependency>
-			            <groupId>org.apache.cxf</groupId>
-			            <artifactId>cxf-rt-frontend-jaxws</artifactId>
-			            <version>${cxf.version}</version>
-			        </dependency>
-			        <dependency>
-			            <groupId>org.apache.cxf</groupId>
-			            <artifactId>cxf-rt-frontend-simple</artifactId>
-			            <version>${cxf.version}</version>
-			        </dependency>
-			    </dependencies>
-			    <executions>
-			        <execution>
-			            <!--id>process-classes</id-->
-			            <!--phase>process-classes</phase-->
-			            <id>package</id>
-			            <phase>package</phase>
-			            <configuration>
-			                <className>{{.JavaPackage}}.GeneratedWSA</className>
-			                <genWsdl>true</genWsdl>
-			                <verbose>true</verbose>
-			                <outputFile>${project.build.directory}/${project.name}-${project.version}.wsdl</outputFile>
-			                <address>REPLACE_WITH_ACTUAL_URL</address>
-			            </configuration>
-			            <goals>
-			                <goal>java2ws</goal>
-			            </goals>
-			        </execution>
-			    </executions>
-			</plugin>
         </plugins>
     </build>
 

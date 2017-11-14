@@ -1,0 +1,118 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import orawsgen.DefaultTypesMethods;
+
+import orawsgen.*;
+
+@Api("")
+@Path("/")
+public class GeneratedRS{
+	private static final Logger LOG = Logger.getLogger(GeneratedRS.class.getName());
+
+	private java.sql.Connection getDbCon() throws java.sql.SQLException {
+		//rozbehat to pres @Resource
+		try {
+			javax.naming.Context context = new javax.naming.InitialContext();
+			javax.sql.DataSource ds = (javax.sql.DataSource)context.lookup("{{$service.JavaDS}}");
+			java.sql.Connection con = ds.getConnection();
+			con.setAutoCommit(false);
+			return con;
+		} catch (javax.naming.NamingException e) {
+			throw new java.sql.SQLException(e);
+		}
+	}
+
+
+{{range $methodIdx, $method := .Methods}}
+	@POST
+	@Path("/{{$method.DbName | ToLower}}")
+	@ApiOperation(value = "call {{$method.DbPkgName}}.{{$method.DbName}}")
+	public {{$method.JavaWSClassName}}Out {{$method.JavaWSMethodName}}(
+			{{$method.JavaWSClassName}}In _in
+	) {
+		LOG.info("start {{$method.JavaWSMethodName}}");
+
+
+		{{$method.JavaWSClassName}}Out _ret=new {{$method.JavaWSClassName}}Out();
+
+		try (java.sql.Connection con = getDbCon(); java.sql.CallableStatement cs = con.prepareCall("{{$method.JdbcStmt}}");) {
+			{{if $method.IsFunction}}
+			//registrace vystupu funkce
+			{{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcRegOutParamMethod}}(con, cs, "ret");
+			{{end}}
+
+			{{range $paramIdx,$param:=.Params}}
+			{{if $param.IsOut}}
+			//registrace out parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcRegOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}
+			{{end}}
+
+            {{range $paramIdx,$param:=.Params}}
+            {{if $param.IsIn}}
+			//nastaveni in parametru
+			{{(index $service.DataTypeMap $param.DataTypeId).JdbcSetParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}", _in.{{$param.JavaParamName}});
+			{{end}}
+			{{end}}
+
+			cs.execute();
+			con.commit();
+
+
+			{{if $method.IsFunction}}
+			//precteni vystupu funkce
+			_ret._result={{(index $service.DataTypeMap $method.ResultDataTypeId).JdbcGetOutParamMethod}}(con, cs, "ret");
+			{{end}}
+
+
+			{{if $method.HasOutputParam}}
+			//precteni vystupnich parametru
+			{{range $paramIdx,$param:=.Params}}{{if $param.IsOut}}
+			_ret.{{$param.JavaParamName}}={{(index $service.DataTypeMap $param.DataTypeId).JdbcGetOutParamMethod}}(con, cs, "{{$param.JdbcStmtParam}}");
+			{{end}}{{end}}
+			{{end}}
+
+		} catch (Exception e) {
+			LOG.log(Level.SEVERE,"err {{$method.JavaWSMethodName}}", e);
+			throw new RuntimeException(e);
+		}
+
+		LOG.info("end {{$method.JavaWSMethodName}}");
+		return _ret;
+	}
+
+	public static class {{$method.JavaWSClassName}}In{
+    {{range $paramIdx,$param:=$method.Params}}
+        {{if $param.IsIn}}
+        public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
+        {{end}}
+    {{end}}
+	}
+
+	public static class {{$method.JavaWSClassName}}Out{
+	{{if $method.IsFunction}}
+        public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} _result;
+    {{end}}
+    {{range $paramIdx,$param:=$method.Params}}
+        {{if $param.IsOut}}
+        public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
+        {{end}}
+    {{end}}
+	}
+
+{{end}}
+
+}

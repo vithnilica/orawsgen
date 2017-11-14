@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"github.com/elazarl/go-bindata-assetfs"
+	"encoding/json"
 )
 
 var conStr *string = flag.String("c", "", "Přihlašovací údaje do databáze (např. user/password@db123)")
@@ -24,8 +25,11 @@ var javaDS *string = flag.String("ds", "java:/OracleDS", "JNDI datového zdroje"
 var logEnabled *bool = flag.Bool("log", false, "Zapne logování")
 var dir *string = flag.String("dir", getwd(), "Pracovní adresář")
 var tmplDir *string = flag.String("tdir", "", "Adresář s šablonou generovaného projektu")
-var tmpl *string = flag.String("tmpl", "wsa", "Šablona generovaného projektu")
-var tmplExport *bool = flag.Bool("texp", false, "Exportuje použitou šablonu")
+var tmpl *string = flag.String("tmpl", "soap", "Šablona generovaného projektu (soap, wsa, rs, rs-swager)")
+var tmplExport *bool = flag.Bool("expt", false, "Exportuje použitou šablonu")
+var confExport *bool = flag.Bool("expconf", false, "Exportuje použitou konfiguraci")
+var defExport *bool = flag.Bool("expdef", false, "Exportuje výchozí nastavení")
+var defConfFile *string= flag.String("def", "", "Náhrada výchozího nastavení")
 
 func getwd() string {
 	dir, err := os.Getwd()
@@ -70,13 +74,43 @@ func main() {
 		panic(err)
 	}
 
-	data, err := OrclServiceConfig(db, *searchPkgName, *appName, *appVer, *nameSpace, *javaPackage, *javaDS)
+	data, err := OrclServiceConfig(db, *searchPkgName, *appName, *appVer, *nameSpace, *javaPackage, *javaDS, *defConfFile)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
 
 	destDir := filepath.Join(*dir, *appName)
+
+	os.MkdirAll(destDir, os.ModePerm);
+
+	if *confExport{
+		fmt.Println("export konfigurace do",filepath.Join(destDir, "orawsgen-conf.json"))
+		j, err := json.MarshalIndent(data,"", "  ")
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			panic(err)
+		}
+		err=ioutil.WriteFile(filepath.Join(destDir, "orawsgen-conf.json"),j,0644)
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			panic(err)
+		}
+	}
+
+	if *defExport{
+		fmt.Println("export výchozího nastavení do",filepath.Join(destDir, "orawsgen-default.json"))
+		j, err := json.MarshalIndent(GetDefaultDataTypeMap(),"", "  ")
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			panic(err)
+		}
+		err=ioutil.WriteFile(filepath.Join(destDir, "orawsgen-default.json"),j,0644)
+		if err != nil {
+			fmt.Printf("%+v\n", err)
+			panic(err)
+		}
+	}
 
 	if *tmplDir != "" {
 		err = TransformDir(*tmplDir, destDir, data)
@@ -92,7 +126,7 @@ func main() {
 			panic(err)
 		}
 		if *tmplExport {
-			err = RestoreAssets(filepath.Join(destDir, "template"), filepath.Join("templates", *tmpl))
+			err = RestoreAssets(filepath.Join(destDir, "orawsgen-templ"), filepath.Join("templates", *tmpl))
 			if err != nil {
 				panic(err)
 			}

@@ -1,10 +1,10 @@
 package main
 
 type Service struct {
+	AppName         string //jmeno waru
 	MavenAppName        string
 	MavenAppVer         string
 	WsdlNameSpace       string //url: http://oracle.generated/
-	WsdlAppName         string //jmeno waru
 	WsdlPortTypeName    string //jmeno db baliku malima
 	JavaPackage         string //balicek testws4
 	JavaDS              string
@@ -131,9 +131,20 @@ func GetDefaultDataTypeMap() (map[string]DataType) {
 			"DefaultTypesMethods.getDbObjectVarchar2",
 			"DefaultTypesMethods.getWsObjectVarchar2",
 		},
+		/*
 		"default:date": {
 			"default:date",
 			"javax.xml.datatype.XMLGregorianCalendar",
+			"DefaultTypesMethods.setDateParam",
+			"DefaultTypesMethods.registerDateOutParam",
+			"DefaultTypesMethods.getDateOutParam",
+			"DefaultTypesMethods.getDbObjectDate",
+			"DefaultTypesMethods.getWsObjectDate",
+		},
+		*/
+		"default:date": {
+			"default:date",
+			"java.util.Date",
 			"DefaultTypesMethods.setDateParam",
 			"DefaultTypesMethods.registerDateOutParam",
 			"DefaultTypesMethods.getDateOutParam",

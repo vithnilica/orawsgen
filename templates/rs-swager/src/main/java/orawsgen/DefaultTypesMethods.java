@@ -115,7 +115,7 @@ public class DefaultTypesMethods {
 	
 	//XMLTYPE
 	public static void setXmlTypeParam(Connection con, CallableStatement cs, String parameterName, XmlAny data) throws SQLException {
-		if(data==null || data.any==null) {
+		if(data==null || data.xmlstr==null) {
 			cs.setNull(parameterName, java.sql.Types.SQLXML,"XMLTYPE");
 			//cs.setNull(parameterName, oracle.jdbc.OracleTypes.OPAQUE, "SYS.XMLTYPE");
 		}else {
@@ -130,7 +130,7 @@ public class DefaultTypesMethods {
 		return DBUtils.convertSqlXml2XmlAny(cs.getSQLXML(parameterName));
 	}
 	public static Object getDbObjectXmlType(java.sql.Connection con, XmlAny o) throws java.sql.SQLException {
-		if(o==null || o.any==null)return null;
+		if(o==null || o.xmlstr==null)return null;
 		return DBUtils.convertXmlAny2SqlXml(con, o);
 	}
 	public static XmlAny getWsObjectXmlType(java.sql.Connection con, Object d) throws java.sql.SQLException {

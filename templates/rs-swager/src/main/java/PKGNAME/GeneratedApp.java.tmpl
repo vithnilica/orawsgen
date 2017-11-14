@@ -1,0 +1,32 @@
+{{$service := .}}
+package {{$service.JavaPackage}};
+
+
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+
+import orawsgen.MyApiListingResource;
+import orawsgen.SwaggerStaticContent;
+
+
+@ApplicationPath("/")
+public class GeneratedApp extends Application {
+
+	@Override
+	public Set<Class<?>> getClasses(){
+		Set<Class<?>> resources = new HashSet<Class<?>>();
+		resources.add(GeneratedRS.class);
+		//resources.add(io.swagger.jaxrs.listing.ApiListingResource.class);
+		//HOTFIX nahrada za io.swagger.jaxrs.listing.ApiListingResource.class
+		resources.add(MyApiListingResource.class);
+		//resources.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
+        resources.add(SwaggerStaticContent.class);
+
+        return resources;
+	}
+
+}
+

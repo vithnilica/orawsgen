@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"log"
 	"fmt"
+	"io/ioutil"
+	"encoding/json"
 )
 
 type UnsupportedError struct {
@@ -343,7 +345,7 @@ func addArray(isParam bool, typeOwner string, typeName string, genneratedConfig 
 		//dataType.JdbcGetWsObject string
 	} else {
 		typeName4Java = "Array" + deUnderscore(typeName, true)
-		dataType.JavaClass = "GeneratedWSTypes." + typeName4Java
+		dataType.JavaClass = "GeneratedTypes." + typeName4Java
 		//dataType.JdbcSetParamMethod    string //jmeno funkce pro predani parametru
 		//dataType.JdbcRegOutParamMethod string //jmeno funkce pro registraci vystupniho parametru
 		//dataType.JdbcGetOutParamMethod string
@@ -416,7 +418,7 @@ func addStruct(typeOwner string, typeName string, genneratedConfig *GenneratedCo
 	var typeName4Java string
 	typeName4Java = "Struct" + deUnderscore(typeName, true)
 
-	dataType.JavaClass = "GeneratedWSTypes." + typeName4Java
+	dataType.JavaClass = "GeneratedTypes." + typeName4Java
 	dataType.JdbcSetParamMethod = "GeneratedTypesMethods.set" + typeName4Java + "Param"            //jmeno funkce pro predani parametru
 	dataType.JdbcRegOutParamMethod = "GeneratedTypesMethods.register" + typeName4Java + "OutParam" //jmeno funkce pro registraci vystupniho parametru
 	dataType.JdbcGetOutParamMethod = "GeneratedTypesMethods.get" + typeName4Java + "OutParam"
@@ -513,7 +515,7 @@ func orclFinalizeGeneratedList(dataTypeMap *map[string]DataType, listDataTypes *
 	}
 }
 
-func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer string, nameSpace string, javaPackage string, javaDS string) (*Service, error) {
+func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer string, nameSpace string, javaPackage string, javaDS string, defConfFile string) (*Service, error) {
 	var tx *sql.Tx
 	tx, err := db.Begin()
 	defer tx.Rollback()
@@ -527,10 +529,10 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 	}
 
 	var data = Service{
+		AppName:      appName,
 		MavenAppName:     appName,
 		MavenAppVer:      appVer,
 		WsdlNameSpace:    nameSpace,
-		WsdlAppName:      appName,
 		WsdlPortTypeName: strings.ToLower(searchPkgName),
 		JavaPackage:      javaPackage,
 		JavaDS:           javaDS,
@@ -550,7 +552,20 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 	data.ListDataTypes = append(data.ListDataTypes, genneratedConfig.ListDataTypes...)
 
 	//pripojeni vychozich hodnot
-	for k, v := range GetDefaultDataTypeMap() {
+	var def map[string]DataType
+	if defConfFile==""{
+		def=GetDefaultDataTypeMap()
+	}else{
+		file, err := ioutil.ReadFile(defConfFile)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		err=json.Unmarshal(file, &def)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	for k, v := range def {
 		data.DataTypeMap[k] = v
 	}
 

@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.*;
 /*
  * vygenerovane tridy pro databazove objekty
  */
-public class GeneratedWSTypes {
+public class GeneratedTypes {
 
 	//struct
 	{{range $structIdx, $struct := .StructDataTypes}}
@@ -19,9 +19,6 @@ public class GeneratedWSTypes {
 	public static class {{$struct.JavaClassName}}{
 		{{range $itemIdx, $item := $struct.Items}}
 			@XmlElement(required = true, nillable = true, name="{{$item.WsdlItemName}}")
-			{{if eq $item.ItemDataTypeId "default:date"}}
-			@XmlSchemaType(name = "dateTime")
-			{{end}}
 			public {{(index $service.DataTypeMap $item.ItemDataTypeId).JavaClass}} {{$item.JavaItemName}};
 
 		{{end}}

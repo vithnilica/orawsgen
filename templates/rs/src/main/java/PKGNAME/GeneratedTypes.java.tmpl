@@ -1,0 +1,37 @@
+{{$service := .}}
+
+package {{$service.JavaPackage}};
+
+import java.util.List;
+
+/*
+ * vygenerovane tridy pro databazove objekty
+ */
+public class GeneratedTypes {
+
+	//struct
+	{{range $structIdx, $struct := .StructDataTypes}}
+	public static class {{$struct.JavaClassName}}{
+		{{range $itemIdx, $item := $struct.Items}}
+			public {{(index $service.DataTypeMap $item.ItemDataTypeId).JavaClass}} {{$item.JavaItemName}};
+
+		{{end}}
+	}
+	{{end}}
+
+
+	//array
+	{{range $arrayIdx, $array := .ArrayDataTypes}}
+	public static class {{$array.JavaClassName}} {
+	    public List<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}> array;
+
+	    public List<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}> getArray() {
+	        if (array == null) {
+	            array = new java.util.ArrayList<{{(index $service.DataTypeMap $array.ItemDataTypeId).JavaClass}}>();
+	        }
+	        return this.array;
+	    }
+	}
+	{{end}}
+
+}

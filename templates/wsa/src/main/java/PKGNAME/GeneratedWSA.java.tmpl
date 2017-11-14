@@ -20,24 +20,19 @@ import javax.xml.bind.annotation.*;
 
 import orawsgen.*;
 
-//@WebServlet("/{{$service.WsdlAppName}}")
 @WebService(
-        serviceName = "{{$service.WsdlAppName}}_Service",
+        serviceName = "{{$service.AppName}}_Service",
         portName = "HttpSoap11",
         targetNamespace = "{{$service.WsdlNameSpace}}",
-        //name = "{{$service.WsdlAppName}}"
         name = "{{$service.WsdlPortTypeName}}"
 )
 //@XmlSeeAlso({TestWSParams.ObjectFactory.class})
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
-public class GeneratedWSSoap{
-	private static final Logger LOG = Logger.getLogger(GeneratedWSSoap.class.getName());
+public class GeneratedWSA{
+	private static final Logger LOG = Logger.getLogger(GeneratedWSA.class.getName());
 
 	javax.sql.DataSource ds;
 
-	//@Resource(name="jdbc/OracleDS")
-	//@Resource(mappedName="java:/OracleDS", type=DataSource.class , authenticationType=AuthenticationType.CONTAINER)
-	//@Resource(lookup = "java:/OracleDS")
 	@Resource(lookup = "{{$service.JavaDS}}")
 	private void setDs (javax.sql.DataSource ds) {
 		this.ds = ds;
@@ -45,7 +40,6 @@ public class GeneratedWSSoap{
 
 
 	private java.sql.Connection getDbCon() throws java.sql.SQLException {
-		//java.sql.Connection con=java.sql.DriverManager.getConnection("jdbc:oracle:thin:@192.168.0.20:1521:xe", "test", "password");
 		java.sql.Connection con=ds.getConnection();
 		con.setAutoCommit(false);
 		return con;
@@ -59,7 +53,7 @@ public class GeneratedWSSoap{
 			@WebParam(partName = "parameters", name = "{{$method.WsdlMethodName}}Element", targetNamespace = "{{$service.WsdlNameSpace}}")
 			{{$method.JavaWSClassName}}Element parameters
 	) {
-		LOG.info("start {{$method.WsdlMethodName}}");
+		LOG.info("start {{$method.JavaWSMethodName}}");
 
 		{{$method.JavaWSClassName}}ResponseElement response = new {{$method.JavaWSClassName}}ResponseElement();
 		{{if $method.HasOutputParam}}
@@ -106,11 +100,11 @@ public class GeneratedWSSoap{
 			{{end}}
 
 		} catch (Exception e) {
-			LOG.log(Level.SEVERE,"err {{$method.WsdlMethodName}}", e);
+			LOG.log(Level.SEVERE,"err {{$method.JavaWSMethodName}}", e);
 			throw new RuntimeException(e);
 		}
 
-		LOG.info("end {{$method.WsdlMethodName}}");
+		LOG.info("end {{$method.JavaWSMethodName}}");
 		return response;
 	}
 
@@ -130,9 +124,6 @@ public class GeneratedWSSoap{
 				{{else}}
 				//in parametr
 				@XmlElement(name="{{$param.WsdlParamName}}",required = true, nillable = true)
-				{{end}}
-				{{if eq $param.DataTypeId "default:date"}}
-				@XmlSchemaType(name = "dateTime")
 				{{end}}
 				public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
 			{{end}}{{end}}
@@ -170,9 +161,6 @@ public class GeneratedWSSoap{
 			{{else}}
 			@XmlElement(name="{{$param.WsdlOutParamName}}", required = true, nillable = true)
 			{{end}}
-			{{if eq $param.DataTypeId "default:date"}}
-			@XmlSchemaType(name = "dateTime")
-			{{end}}
 			public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
 			{{end}}{{end}}
 		}
@@ -196,9 +184,6 @@ public class GeneratedWSSoap{
 		@XmlRootElement(name = "{{$method.WsdlMethodName}}ResponseElement")
 		public static class {{$method.JavaWSClassName}}ResponseElement {
 			@XmlElement(name="result", required = true, nillable = true)
-			{{if eq $method.ResultDataTypeId "default:date"}}
-			@XmlSchemaType(name = "dateTime")
-			{{end}}
 			public {{(index $service.DataTypeMap $method.ResultDataTypeId).JavaClass}} result;
 		}
 	{{else}}
