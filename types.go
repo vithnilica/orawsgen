@@ -1,7 +1,7 @@
 package main
 
 type Service struct {
-	AppName         string //jmeno waru
+	AppName             string //jmeno waru
 	MavenAppName        string
 	MavenAppVer         string
 	WsdlNameSpace       string //url: http://oracle.generated/
@@ -82,9 +82,10 @@ type DataType struct {
 }
 
 type StructItem struct {
-	WsdlItemName   string
-	JavaItemName   string
-	ItemDataTypeId string
+	//WsdlItemName   string
+	JavaItemName    string
+	ItemDataTypeId  string
+	WsdlWSAItemName string
 }
 
 type StructDataType struct {
@@ -111,7 +112,7 @@ type ArrayDataType struct {
 	ItemDataTypeId string
 }
 
-func GetDefaultDataTypeMap() (map[string]DataType) {
+func GetDefaultDataTypeMap() map[string]DataType {
 	var defaultDataTypeMap = map[string]DataType{
 		"default:number": {
 			"default:number",
@@ -122,6 +123,15 @@ func GetDefaultDataTypeMap() (map[string]DataType) {
 			"DefaultTypesMethods.getDbObjectNumber",
 			"DefaultTypesMethods.getWsObjectNumber",
 		},
+		"default:integer": {
+			"default:integer",
+			"java.lang.Integer",
+			"DefaultTypesMethods.setIntegerParam",
+			"DefaultTypesMethods.registerIntegerOutParam",
+			"DefaultTypesMethods.getIntegerOutParam",
+			"DefaultTypesMethods.getDbObjectInteger",
+			"DefaultTypesMethods.getWsObjectInteger",
+		},
 		"default:varchar2": {
 			"default:varchar2",
 			"String",
@@ -131,17 +141,6 @@ func GetDefaultDataTypeMap() (map[string]DataType) {
 			"DefaultTypesMethods.getDbObjectVarchar2",
 			"DefaultTypesMethods.getWsObjectVarchar2",
 		},
-		/*
-		"default:date": {
-			"default:date",
-			"javax.xml.datatype.XMLGregorianCalendar",
-			"DefaultTypesMethods.setDateParam",
-			"DefaultTypesMethods.registerDateOutParam",
-			"DefaultTypesMethods.getDateOutParam",
-			"DefaultTypesMethods.getDbObjectDate",
-			"DefaultTypesMethods.getWsObjectDate",
-		},
-		*/
 		"default:date": {
 			"default:date",
 			"java.util.Date",
@@ -177,6 +176,15 @@ func GetDefaultDataTypeMap() (map[string]DataType) {
 			"DefaultTypesMethods.getBlobOutParam",
 			"DefaultTypesMethods.getDbObjectBlob",
 			"DefaultTypesMethods.getWsObjectBlob",
+		},
+		"default:boolean": {
+			"default:boolean",
+			"java.lang.Boolean",
+			"DefaultTypesMethods.setBooleanParam",
+			"DefaultTypesMethods.registerBooleanOutParam",
+			"DefaultTypesMethods.getBooleanOutParam",
+			"DefaultTypesMethods.getDbObjectBoolean",
+			"DefaultTypesMethods.getWsObjectBoolean",
 		},
 	}
 

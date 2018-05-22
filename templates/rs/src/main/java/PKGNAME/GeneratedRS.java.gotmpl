@@ -36,7 +36,6 @@ public class GeneratedRS{
 {{range $methodIdx, $method := .Methods}}
 	@POST
 	@Path("/{{$method.DbName | ToLower}}")
-	@ApiOperation(value = "call {{$method.DbPkgName}}.{{$method.DbName}}")
 	public {{$method.JavaWSClassName}}Out {{$method.JavaWSMethodName}}(
 			{{$method.JavaWSClassName}}In _in
 	) {

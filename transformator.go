@@ -2,20 +2,21 @@ package main
 
 import (
 	"bytes"
-	"text/template"
-	"github.com/pkg/errors"
-	"io/ioutil"
-	"path/filepath"
-	"os"
-	"strings"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"strings"
+	"text/template"
+
+	"github.com/pkg/errors"
 )
 
-const TEMPLATE_FILE_EXT string = ".tmpl"
+const TEMPLATE_FILE_EXT string = ".gotmpl"
 const TEMPLATE_PKGNAME string = "PKGNAME"
 
 var funcMap template.FuncMap = template.FuncMap{
@@ -23,10 +24,10 @@ var funcMap template.FuncMap = template.FuncMap{
 	"ToLower":   strings.ToLower,
 	"HasPrefix": strings.HasPrefix,
 	"Last": func(x int, a interface{}) bool {
-		return x == reflect.ValueOf(a).Len() - 1
+		return x == reflect.ValueOf(a).Len()-1
 	},
 	"NotLast": func(x int, a interface{}) bool {
-		return x != reflect.ValueOf(a).Len() - 1
+		return x != reflect.ValueOf(a).Len()-1
 	},
 }
 
@@ -39,7 +40,7 @@ func (s *Service) GetTemplateVariable(key string) interface{} {
 	return s.TemplateVariableMap[key]
 }
 
-func TransformFile(templName string, tmplFilename string, destFilename string, data *Service) (error) {
+func TransformFile(templName string, tmplFilename string, destFilename string, data *Service) error {
 	var err error
 	//ohejbak pro sablonu. potrebuju promenne
 	//vynuluje pomocne uloziste "promenych"
@@ -68,7 +69,7 @@ func TransformFile(templName string, tmplFilename string, destFilename string, d
 	return nil
 }
 
-func TransformReader(templName string, tmpl io.Reader, destFilename string, data *Service) (error) {
+func TransformReader(templName string, tmpl io.Reader, destFilename string, data *Service) error {
 	var err error
 	//ohejbak pro sablonu. potrebuju promenne
 	//vynuluje pomocne uloziste "promenych"
@@ -101,7 +102,7 @@ func TransformReader(templName string, tmpl io.Reader, destFilename string, data
 	return nil
 }
 
-func cpFile(src, dst string) (error) {
+func cpFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return errors.WithStack(err)
@@ -127,7 +128,7 @@ func cpFile(src, dst string) (error) {
 	return nil
 }
 
-func cpReader(in io.Reader, dst string) (error) {
+func cpReader(in io.Reader, dst string) error {
 	out, err := os.Create(dst)
 	if err != nil {
 		return errors.WithStack(err)
@@ -148,7 +149,7 @@ func cpReader(in io.Reader, dst string) (error) {
 	return nil
 }
 
-func TransformDir(skelDir string, destDir string, data *Service) (error) {
+func TransformDir(skelDir string, destDir string, data *Service) error {
 	//prevede jmeno java baliku na adresar (javax.xml.datatype -> javax/xml/datatype)
 	pkgDir := filepath.Join(strings.Split(data.JavaPackage, ".")...)
 
@@ -171,20 +172,20 @@ func TransformDir(skelDir string, destDir string, data *Service) (error) {
 		if f.IsDir() {
 			//adresar, pokud neexistuje, tak ho zalozi
 			log.Println("md", destPath)
-			os.MkdirAll(destPath, os.ModePerm);
+			os.MkdirAll(destPath, os.ModePerm)
 		} else if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			//sablona
 			log.Println("trans", destPath)
 			err = TransformFile(filepath.Base(srcPath), srcPath, destPath, data)
 			if err != nil {
-				return err;
+				return err
 			}
 		} else {
 			//soubor, jen se prekopiruje
 			log.Println("cp", destPath)
 			err = cpFile(srcPath, destPath)
 			if err != nil {
-				return err;
+				return err
 			}
 
 		}
@@ -198,8 +199,8 @@ func TransformDir(skelDir string, destDir string, data *Service) (error) {
 
 type walkFunc func(fs http.FileSystem, path string, file os.FileInfo) error
 
-func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc) (error) {
-	dirFile, err := fs.Open(dir);
+func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc) error {
+	dirFile, err := fs.Open(dir)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -234,7 +235,7 @@ func walkVirtual(fs http.FileSystem, dir string, walkFn walkFunc) (error) {
 	return nil
 }
 
-func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, data *Service) (error) {
+func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, data *Service) error {
 	//prevede jmeno java baliku na adresar (javax.xml.datatype -> javax/xml/datatype)
 	pkgDir := filepath.Join(strings.Split(data.JavaPackage, ".")...)
 
@@ -253,7 +254,7 @@ func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, dat
 		if f.IsDir() {
 			//adresar, pokud neexistuje, tak ho zalozi
 			log.Println("md", destPath)
-			os.MkdirAll(destPath, os.ModePerm);
+			os.MkdirAll(destPath, os.ModePerm)
 		} else if filepath.Ext(srcPath) == TEMPLATE_FILE_EXT {
 			//sablona
 			log.Println("trans", destPath)
@@ -263,7 +264,7 @@ func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, dat
 			}
 			err = TransformReader(filepath.Base(srcPath), file, destPath, data)
 			if err != nil {
-				return err;
+				return err
 			}
 		} else {
 			//soubor, jen se prekopiruje
@@ -274,7 +275,7 @@ func TransformVirtualDir(fs http.FileSystem, skelDir string, destDir string, dat
 			}
 			err = cpReader(file, destPath)
 			if err != nil {
-				return err;
+				return err
 			}
 
 		}

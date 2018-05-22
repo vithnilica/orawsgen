@@ -18,7 +18,7 @@ public class GeneratedTypes {
 	})
 	public static class {{$struct.JavaClassName}}{
 		{{range $itemIdx, $item := $struct.Items}}
-			@XmlElement(required = true, nillable = true, name="{{$item.WsdlItemName}}")
+			@XmlElement(required = true, nillable = true, name="{{$item.WsdlWSAItemName}}")
 			public {{(index $service.DataTypeMap $item.ItemDataTypeId).JavaClass}} {{$item.JavaItemName}};
 
 		{{end}}

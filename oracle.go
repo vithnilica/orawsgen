@@ -2,13 +2,13 @@ package main
 
 import (
 	"database/sql"
-	"github.com/pkg/errors"
-	"strings"
-	"strconv"
-	"log"
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"log"
+	"strconv"
+	"strings"
 )
 
 type UnsupportedError struct {
@@ -20,12 +20,12 @@ func (e *UnsupportedError) Error() string {
 }
 
 //retezec prevede na male pismena, odmaze podtrzika a pismena ktera nasledovala za podtrzitkem zmeni na velka
-func deUnderscore(str string, firstCap bool) (string) {
+func deUnderscore(str string, firstCap bool) string {
 	str = strings.ToLower(str)
 	var str2 string = ""
 	var u bool = firstCap
 	for _, c := range str {
-		if (c == '_') {
+		if c == '_' {
 			u = true
 		} else {
 			if u == true {
@@ -42,9 +42,12 @@ func deUnderscore(str string, firstCap bool) (string) {
 func getParamDataType(dataType string, typeOwner string, typeName string, genneratedConfig *GenneratedConfig, tx *sql.Tx) (dataTypeId string, err error) {
 	if dataType == "NUMBER" {
 		dataTypeId = "default:number"
-	} else if dataType == "VARCHAR2" {
+	} else if dataType == "BINARY_INTEGER" || dataType == "NATURAL" || dataType == "NATURALN" || dataType == "PLS_INTEGER" || dataType == "POSITIVE" || dataType == "POSITIVEN" || dataType == "SIGNTYPE" || dataType == "INT" || dataType == "INTEGER" {
+		//TODO neni to primo number, do javy by se to misto java.math.BigDecimal mapovat jako int
+		dataTypeId = "default:integer"
+	} else if dataType == "VARCHAR2" || dataType == "CHAR" || dataType == "CHARACTER" || dataType == "LONG" || dataType == "STRING" || dataType == "VARCHAR" {
 		dataTypeId = "default:varchar2"
-	} else if dataType == "DATE" {
+	} else if dataType == "DATE" || dataType == "TIMESTAMP" {
 		dataTypeId = "default:date"
 	} else if dataType == "CLOB" {
 		dataTypeId = "default:clob"
@@ -62,6 +65,8 @@ func getParamDataType(dataType string, typeOwner string, typeName string, genner
 		if err != nil {
 			return "", err
 		}
+	} else if dataType == "PL/SQL BOOLEAN" {
+		dataTypeId = "default:boolean"
 	} else {
 		//vrati ze je to nepodporovany
 		return "", &UnsupportedError{Reason: "metoda obsahuje nepodporovany typ parametru (" + dataType + ", " + typeOwner + ", " + typeName + ")"}
@@ -72,9 +77,12 @@ func getParamDataType(dataType string, typeOwner string, typeName string, genner
 func getItemDataType(typeOwner string, typeName string, typeCode string, genneratedConfig *GenneratedConfig, tx *sql.Tx) (dataTypeId string, err error) {
 	if typeName == "NUMBER" {
 		dataTypeId = "default:number"
-	} else if typeName == "VARCHAR2" {
+	} else if typeName == "BINARY_INTEGER" || typeName == "NATURAL" || typeName == "NATURALN" || typeName == "PLS_INTEGER" || typeName == "POSITIVE" || typeName == "POSITIVEN" || typeName == "SIGNTYPE" || typeName == "INT" || typeName == "INTEGER" {
+		//TODO neni to primo number, do javy by se to misto java.math.BigDecimal mapovat jako int
+		dataTypeId = "default:integer"
+	} else if typeName == "VARCHAR2" || typeName == "CHAR" || typeName == "CHARACTER" || typeName == "LONG" || typeName == "STRING" || typeName == "VARCHAR" {
 		dataTypeId = "default:varchar2"
-	} else if typeName == "DATE" {
+	} else if typeName == "DATE" || typeName == "TIMESTAMP" {
 		dataTypeId = "default:date"
 	} else if typeName == "CLOB" {
 		dataTypeId = "default:clob"
@@ -93,6 +101,7 @@ func getItemDataType(typeOwner string, typeName string, typeCode string, gennera
 			return "", err
 		}
 	} else {
+		//TODO boolean jako v parametrech?
 		//vrati ze je to nepodporovany
 		return "", &UnsupportedError{Reason: "nepodporovany typ (" + typeOwner + ", " + typeName + ", " + typeCode + ")"}
 	}
@@ -117,7 +126,7 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 	var jdbcStmtParamStr string
 	var paramNum int = 0
 
-	method.DbName = methodName;
+	method.DbName = methodName
 	method.DbPkgOwner = pkgOwner
 	method.DbPkgName = pkgName
 	method.DbSubprogramId = subprogramId
@@ -187,12 +196,22 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 				param.IsIn = true
 				param.IsOut = true
 				method.HasInputParam = true
+				method.HasOutputParam = true
 			}
 			paramNum++
-			if paramNum == 1 {
-				jdbcStmtParamStr = ":p1"
+			//ohejbak pro boolean, kterej se v oraclu vola pres wrapper
+			if dataType.String == "PL/SQL BOOLEAN" {
+				if paramNum == 1 {
+					jdbcStmtParamStr = "SYS.SQLJUTL.INT2BOOL(:p1)"
+				} else {
+					jdbcStmtParamStr = jdbcStmtParamStr + ", SYS.SQLJUTL.INT2BOOL(:p" + strconv.Itoa(paramNum) + ")"
+				}
 			} else {
-				jdbcStmtParamStr = jdbcStmtParamStr + ", :p" + strconv.Itoa(paramNum)
+				if paramNum == 1 {
+					jdbcStmtParamStr = ":p1"
+				} else {
+					jdbcStmtParamStr = jdbcStmtParamStr + ", :p" + strconv.Itoa(paramNum)
+				}
 			}
 
 			//param.JavaParamName = "p" + strconv.Itoa(paramNum)
@@ -207,6 +226,12 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 					param.WsdlOutParamName = strings.ToLower(param.WsdlParamName) + "Out"
 				}
 			}
+		}
+
+		//kontrola pro boolean, kterej se v oraclu vola pres wrapper
+		if dataType.String == "PL/SQL BOOLEAN" && (isFunctionRestult || param.IsOut) {
+			genneratedConfig.UnsupportedMethods = append(genneratedConfig.UnsupportedMethods, UnsupportedMethod{DbName: methodName, DbPkgOwner: pkgOwner, DbPkgName: pkgName, DbSubprogramId: subprogramId, Reason: "boolean je podporovany jen jako in parametr"})
+			return nil
 		}
 
 		var dataTypeId string
@@ -231,7 +256,7 @@ func addPkgMethod(methodName string, pkgOwner string, pkgName string, subprogram
 
 	}
 
-	if (method.IsFunction) {
+	if method.IsFunction {
 		method.JdbcStmt = "{call :r1:=" + pkgOwner + "." + pkgName + "." + methodName + "(" + jdbcStmtParamStr + ")}" //volani procedurt/funkce vcetne pojmenovanych parametru napr. "{call :r1=vh_test_pkg.p1(:p1,:p2,:p3)}"
 	} else {
 		method.JdbcStmt = "{call " + pkgOwner + "." + pkgName + "." + methodName + "(" + jdbcStmtParamStr + ")}" //volani procedurt/funkce vcetne pojmenovanych parametru napr. "{call vh_test_pkg.p1(:p1,:p2,:p3)}"
@@ -297,7 +322,7 @@ func addPkgMethods(pkgOwner string, pkgName string, genneratedConfig *Gennerated
 		//hlida duplicitni jmeno (nepovedlo se zjistit podle jakeho pravidla wsa generuje jmeno)
 		dupl := false
 		for i := range genneratedConfig.Methods {
-			if (genneratedConfig.Methods[i].DbName == methodName) {
+			if genneratedConfig.Methods[i].DbName == methodName {
 				dupl = true
 				break
 			}
@@ -458,20 +483,27 @@ func addStruct(typeOwner string, typeName string, genneratedConfig *GenneratedCo
 
 		var item StructItem
 		item.ItemDataTypeId = dataTypeId
-		item.WsdlItemName = deUnderscore(attrName.String, false) //jmeno polozky prevedene na male pisemena?
+		//item.WsdlItemName = deUnderscore(attrName.String, false) //jmeno polozky prevedene na male pisemena?
+		//HOTFIX kdyz je druhe pismeno podtrzitko, tak prvni pismeno musi byt podle WSA tvelke
+		if len(attrName.String) >= 2 && attrName.String[1] == '_' {
+			item.WsdlWSAItemName = deUnderscore(attrName.String, true) //jmeno polozky prevedene na male pisemena?
+		} else {
+			item.WsdlWSAItemName = deUnderscore(attrName.String, false) //jmeno polozky prevedene na male pisemena?
+		}
+
 		item.JavaItemName = deUnderscore(attrName.String, false) //TODO mozna predelat na p1, p2, p3 ...
 		structDataType.Items = append(structDataType.Items, item)
 	}
 
 	//kontrola ze typ existuje
-	if (len(structDataType.Items) == 0) {
+	if len(structDataType.Items) == 0 {
 		return "", errors.New("typ nenalezen v pohledu all_type_attrs " + typeOwner + ", " + typeName)
 	}
 
 	//ohjebak pro polozky "setrideny" nejdrive podle abecedy a pak pomoci hashmapy v jave
 	var iarr15 [][2]string
 	for i := range structDataType.Items {
-		iarr15 = append(iarr15, [2]string{structDataType.Items[i].WsdlItemName, structDataType.Items[i].JavaItemName})
+		iarr15 = append(iarr15, [2]string{structDataType.Items[i].WsdlWSAItemName, structDataType.Items[i].JavaItemName})
 	}
 	structDataType.JavaWSAItems = MixerJava15(iarr15)
 
@@ -511,7 +543,7 @@ func orclFinalizeGeneratedList(dataTypeMap *map[string]DataType, listDataTypes *
 	for _, listDataType := range *listDataTypes {
 		dt := (*dataTypeMap)[listDataType.DataTypeId]
 		dt.JavaClass = "List<" + (*dataTypeMap)[listDataType.ItemDataTypeId].JavaClass + ">"
-		(*dataTypeMap)[listDataType.DataTypeId] = dt;
+		(*dataTypeMap)[listDataType.DataTypeId] = dt
 	}
 }
 
@@ -529,17 +561,18 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 	}
 
 	var data = Service{
-		AppName:      appName,
-		MavenAppName:     appName,
-		MavenAppVer:      appVer,
-		WsdlNameSpace:    nameSpace,
-		WsdlPortTypeName: strings.ToLower(searchPkgName),
+		AppName:       appName,
+		MavenAppName:  appName,
+		MavenAppVer:   appVer,
+		WsdlNameSpace: nameSpace,
+		//WsdlPortTypeName: strings.ToLower(searchPkgName),
+		WsdlPortTypeName: searchPkgName,
 		JavaPackage:      javaPackage,
 		JavaDS:           javaDS,
 	}
 
 	if data.DataTypeMap == nil {
-		data.DataTypeMap = map[string]DataType{};
+		data.DataTypeMap = map[string]DataType{}
 	}
 
 	//pripojeni vygenerovanych hodnot
@@ -553,14 +586,14 @@ func OrclServiceConfig(db *sql.DB, searchPkgName string, appName string, appVer 
 
 	//pripojeni vychozich hodnot
 	var def map[string]DataType
-	if defConfFile==""{
-		def=GetDefaultDataTypeMap()
-	}else{
+	if defConfFile == "" {
+		def = GetDefaultDataTypeMap()
+	} else {
 		file, err := ioutil.ReadFile(defConfFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		err=json.Unmarshal(file, &def)
+		err = json.Unmarshal(file, &def)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

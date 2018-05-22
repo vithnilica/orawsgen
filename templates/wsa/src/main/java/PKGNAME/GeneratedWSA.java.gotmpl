@@ -120,10 +120,18 @@ public class GeneratedWSA{
 			{{range $paramIdx,$param:=.Params}}{{if $param.IsIn}}
 				{{if $param.IsOut}}
 				//inout parametr
+				{{if HasPrefix $param.DataTypeId "generated:list:"}}
+				@XmlElement(name="{{$param.WsdlParamName}}_inout", nillable = true)
+				{{else}}
 				@XmlElement(name="{{$param.WsdlParamName}}_inout",required = true, nillable = true)
+				{{end}}
 				{{else}}
 				//in parametr
+				{{if HasPrefix $param.DataTypeId "generated:list:"}}
+				@XmlElement(name="{{$param.WsdlParamName}}", nillable = true)
+				{{else}}
 				@XmlElement(name="{{$param.WsdlParamName}}",required = true, nillable = true)
+				{{end}}
 				{{end}}
 				public {{(index $service.DataTypeMap $param.DataTypeId).JavaClass}} {{$param.JavaParamName}};
 			{{end}}{{end}}
@@ -142,7 +150,7 @@ public class GeneratedWSA{
 	{{if $method.HasOutputParam}}
 	//metoda s out parametrama
 		@XmlAccessorType(XmlAccessType.FIELD)
-		@XmlType(name = "{{$method.WsdlPkgName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
+		@XmlType(name = "{{$service.WsdlPortTypeName}}User_{{$method.WsdlMethodName}}_Out", propOrder = {
 			{{range $opi,$op:=$method.JavaWSAOutParams}}{{if ne 0 $opi}},{{end}}"{{$op}}"{{end}}
 		})
 		public static class {{$method.JavaWSClassName}}ResponseElementOut {

@@ -43,6 +43,30 @@ public class DefaultTypesMethods {
 		return (BigDecimal) d;
 	}
 
+	//BINARY_INTEGER, NATURAL, NATURALN, PLS_INTEGER, POSITIVE, POSITIVEN, SIGNTYPE, INT, INTEGER
+	public static void setIntegerParam(Connection con, CallableStatement cs, String parameterName, Integer data) throws SQLException {
+		if(data==null){
+			cs.setNull(parameterName, java.sql.Types.INTEGER);
+		}else{
+			cs.setInt(parameterName, data);
+		}
+	}
+	public static void registerIntegerOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		cs.registerOutParameter(parameterName, java.sql.Types.INTEGER);
+	}
+	public static Integer getIntegerOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		return new Integer(cs.getInt(parameterName));
+	}
+	public static Object getDbObjectInteger(java.sql.Connection con, Integer o) throws java.sql.SQLException {
+		if(o==null)return null;
+		return o;
+	}
+	public static Integer getWsObjectInteger(java.sql.Connection con, Object d) throws java.sql.SQLException {
+		if(d==null)return null;
+		if(d instanceof BigDecimal)return ((BigDecimal)d).intValue(); //ohejbak, z objektu to dostavam jako jinej typ
+		return (Integer) d;
+	}
+	
 	//VARCHAR2
 	public static void setVarchar2Param(Connection con, CallableStatement cs, String parameterName, String data) throws SQLException {
 		cs.setString(parameterName, data);
@@ -248,4 +272,28 @@ public class DefaultTypesMethods {
 		}
 	}
 
+	//PL/SQL BOOLEAN
+	public static void setBooleanParam(Connection con, CallableStatement cs, String parameterName, java.lang.Boolean data) throws SQLException {
+		if(data==null){
+			cs.setNull(parameterName, java.sql.Types.INTEGER);//ten integer je schvalne
+		}else{
+			cs.setBoolean(parameterName, data.booleanValue());
+		}
+	}
+	public static void registerBooleanOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		//spadnout, tohle by nemelo byt volane
+		throw new java.lang.RuntimeException("boolean nelze pouzit v out parametru");
+	}
+	public static java.lang.Boolean getBooleanOutParam(Connection con, CallableStatement cs, String parameterName) throws SQLException {
+		//spadnout, tohle by nemelo byt volane
+		throw new java.lang.RuntimeException("boolean nelze pouzit v out parametru");
+	}
+	public static Object getDbObjectBoolean(java.sql.Connection con, java.lang.Boolean o) throws java.sql.SQLException {
+		//spadnout, tohle by nemelo byt volane
+		throw new java.lang.RuntimeException("boolean nelze pouzit v objektu");
+	}
+	public static java.lang.Boolean getWsObjectBoolean(java.sql.Connection con, Object d) throws java.sql.SQLException {
+		//spadnout, tohle by nemelo byt volane
+		throw new java.lang.RuntimeException("boolean nelze pouzit v objektu");
+	}
 }

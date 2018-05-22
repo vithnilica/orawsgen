@@ -3,16 +3,18 @@ package main
 //go:generate go-bindata -prefix ./ -pkg main -o ./bindata.go ./templates/...
 
 import (
-	"fmt"
 	"database/sql"
-	_ "github.com/mattn/go-oci8"
-	"flag"
-	"os"
-	"log"
-	"io/ioutil"
-	"path/filepath"
-	"github.com/elazarl/go-bindata-assetfs"
 	"encoding/json"
+	"flag"
+	"fmt"
+
+	"github.com/elazarl/go-bindata-assetfs"
+	_ "github.com/mattn/go-oci8"
+	//_ "gopkg.in/goracle.v2" //https://github.com/go-goracle/goracle
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
 )
 
 var conStr *string = flag.String("c", "", "Přihlašovací údaje do databáze (např. user/password@db123)")
@@ -25,11 +27,11 @@ var javaDS *string = flag.String("ds", "java:/OracleDS", "JNDI datového zdroje"
 var logEnabled *bool = flag.Bool("log", false, "Zapne logování")
 var dir *string = flag.String("dir", getwd(), "Pracovní adresář")
 var tmplDir *string = flag.String("tdir", "", "Adresář s šablonou generovaného projektu")
-var tmpl *string = flag.String("tmpl", "soap", "Šablona generovaného projektu (soap, wsa, rs, rs-swager)")
+var tmpl *string = flag.String("tmpl", "soap", "Šablona generovaného projektu (soap, wsa, rs)")
 var tmplExport *bool = flag.Bool("expt", false, "Exportuje použitou šablonu")
 var confExport *bool = flag.Bool("expconf", false, "Exportuje použitou konfiguraci")
 var defExport *bool = flag.Bool("expdef", false, "Exportuje výchozí nastavení")
-var defConfFile *string= flag.String("def", "", "Náhrada výchozího nastavení")
+var defConfFile *string = flag.String("def", "", "Náhrada výchozího nastavení")
 
 func getwd() string {
 	dir, err := os.Getwd()
@@ -64,6 +66,7 @@ func main() {
 	}
 
 	db, err := sql.Open("oci8", *conStr)
+	//db, err := sql.Open("goracle", *conStr)
 	if err != nil {
 		panic(err)
 	}
@@ -82,30 +85,30 @@ func main() {
 
 	destDir := filepath.Join(*dir, *appName)
 
-	os.MkdirAll(destDir, os.ModePerm);
+	os.MkdirAll(destDir, os.ModePerm)
 
-	if *confExport{
-		fmt.Println("export konfigurace do",filepath.Join(destDir, "orawsgen-conf.json"))
-		j, err := json.MarshalIndent(data,"", "  ")
+	if *confExport {
+		fmt.Println("export konfigurace do", filepath.Join(destDir, "orawsgen-conf.json"))
+		j, err := json.MarshalIndent(data, "", "  ")
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)
 		}
-		err=ioutil.WriteFile(filepath.Join(destDir, "orawsgen-conf.json"),j,0644)
+		err = ioutil.WriteFile(filepath.Join(destDir, "orawsgen-conf.json"), j, 0644)
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)
 		}
 	}
 
-	if *defExport{
-		fmt.Println("export výchozího nastavení do",filepath.Join(destDir, "orawsgen-default.json"))
-		j, err := json.MarshalIndent(GetDefaultDataTypeMap(),"", "  ")
+	if *defExport {
+		fmt.Println("export výchozího nastavení do", filepath.Join(destDir, "orawsgen-default.json"))
+		j, err := json.MarshalIndent(GetDefaultDataTypeMap(), "", "  ")
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)
 		}
-		err=ioutil.WriteFile(filepath.Join(destDir, "orawsgen-default.json"),j,0644)
+		err = ioutil.WriteFile(filepath.Join(destDir, "orawsgen-default.json"), j, 0644)
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			panic(err)

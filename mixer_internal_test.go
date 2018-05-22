@@ -6,7 +6,7 @@ import (
 
 func testHash(hc int32, result int32, t *testing.T) {
 	x := hash15(hc)
-	if (x != result) {
+	if x != result {
 		t.Error("testHash", hc, result, x)
 	}
 }
@@ -35,7 +35,7 @@ func TestSomeHash(t *testing.T) {
 
 func testHashCode(s string, result int32, t *testing.T) {
 	hc := hashCodeString(s)
-	if (hc != result) {
+	if hc != result {
 		t.Error("testHashCode", s, result, hc)
 	}
 }
@@ -145,6 +145,26 @@ func TestMixerOutParams1(t *testing.T) {
 	for i := range mixed {
 		if mixed[i] != hashmapmixed[i] {
 			t.Error("TestMixerOutParams1", i, mixed[i], hashmapmixed[i])
+		}
+	}
+}
+
+func TestMixerOutParams2(t *testing.T) {
+	//poradi podle baliku
+	orig := [...]string{"posumannpremOut", "posumfreqpremOut", "popremsxmlOut", "poerrnoOut", "poerrtextOut", "poerrxmlOut"}
+	//poradi podle wsdl
+	mixed := [...]string{"posumfreqpremOut", "poerrtextOut", "popremsxmlOut", "poerrxmlOut", "poerrnoOut", "posumannpremOut"}
+
+	var parr15 [][2]string
+	for i := range orig {
+		parr15 = append(parr15, [2]string{orig[i], orig[i]})
+	}
+
+	hashmapmixed := MixerJava15(parr15)
+
+	for i := range mixed {
+		if mixed[i] != hashmapmixed[i] {
+			t.Error("TestMixerOutParams2", i, mixed[i], hashmapmixed[i])
 		}
 	}
 }
